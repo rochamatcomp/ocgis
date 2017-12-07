@@ -1,5 +1,8 @@
+from unittest import SkipTest
+
 import mock
 
+import ocgis
 from ocgis import RequestDataset, GridSplitter
 from ocgis.constants import DriverKey
 from ocgis.test.base import TestBase, attr
@@ -60,6 +63,11 @@ class Test(TestBase):
     @mock.patch('ocli.RequestDataset')
     @attr('mpi')
     def test_system_combinations(self, mRequestDataset, mGridSplitter, m_mkdtemp, m_rmtree, m_makedirs):
+        if ocgis.vm.size not in [1, 2]:
+            raise SkipTest('ocgis.vm.size not in [1, 2]')
+
+        m_mkdtemp.return_value = 'mkdtemp return value'
+
         poss = self.fixture_flags_good()
         for ctr, k in enumerate(self.iter_product_keywords(poss, as_namedtuple=False), start=1):
             new_poss = {}
@@ -81,6 +89,9 @@ class Test(TestBase):
             instance = mGridSplitter.return_value
             instance.write_subsets.assert_called_once()
             call_args = mGridSplitter.call_args
+            if k['wd'] == '__exclude__':
+                actual = call_args[1]['paths']['wd']
+                self.assertEqual(actual, m_mkdtemp.return_value)
             if 'no_merge' not in new_poss:
                 instance.create_merged_weight_file.assert_called_once_with(new_poss['weight'])
             else:
@@ -94,11 +105,20 @@ class Test(TestBase):
             self.assertEqual(mRequestDataset.call_count, 2)
 
             if 'wd' not in new_poss:
-                m_mkdtemp.assert_called_once()
+                if ocgis.vm.rank == 0:
+                    m_mkdtemp.assert_called_once()
+                else:
+                    m_mkdtemp.assert_not_called()
             else:
-                m_makedirs.assert_called_once()
+                if ocgis.vm.rank == 0:
+                    m_makedirs.assert_called_once()
+                else:
+                    m_makedirs.assert_not_called()
             if 'persist' not in new_poss:
-                m_rmtree.assert_called_once()
+                if ocgis.vm.rank == 0:
+                    m_rmtree.assert_called_once()
+                else:
+                    m_rmtree.assert_not_called()
             else:
                 m_rmtree.assert_not_called()
 

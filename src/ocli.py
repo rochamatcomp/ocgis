@@ -10,6 +10,7 @@ import click
 # tdk: LAST: harmonize GridSplitter param names with final interface names
 import os
 
+import ocgis
 from ocgis import RequestDataset, GridSplitter
 from ocgis.constants import DriverKey
 
@@ -46,8 +47,6 @@ def ocli():
 @click.option('--merge/--no_merge', default=True,
               help='If present, do not merge weight file chunks into a global weight file.')
 def chunker(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, src_resolution, dst_resolution, buffer_distance, wd, persist, merge):
-    # tdk: comment
-    # tdk: test in parallel
     # Format the chunking decomposition from its string representation.
     if ',' in nchunks_dst:
         nchunks_dst = nchunks_dst.split(',')
@@ -59,23 +58,27 @@ def chunker(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_ty
     rd_src = create_request_dataset(source, esmf_src_type)
     rd_dst = create_request_dataset(destination, esmf_dst_type)
 
-    # Update the paths to use for the grid chunker.
-    paths = {'wd': wd}
-    # If we are not merging the chunked weight files, the weight string value is the string template to use for the
-    # output weight files.
-    if not merge:
-        paths['wgt_template'] = weight
-
     # Make a temporary working directory is one is not provided by the client.
     if wd is None:
-        wd = tempfile.mkdtemp(prefix='ocgis_chunker_', dir=os.getcwd())
+        if ocgis.vm.rank == 0:
+            wd = tempfile.mkdtemp(prefix='ocgis_chunker_', dir=os.getcwd())
+        wd = ocgis.vm.bcast(wd)
     else:
         # The working directoy must not exist to proceed.
         if os.path.exists(wd):
             raise ValueError("Working directory 'wd' must not exist.")
         else:
             # Make the working directory nesting as needed.
-            os.makedirs(wd)
+            if ocgis.vm.rank == 0:
+                os.makedirs(wd)
+            ocgis.vm.barrier()
+
+    # Update the paths to use for the grid chunker.
+    paths = {'wd': wd}
+    # If we are not merging the chunked weight files, the weight string value is the string template to use for the
+    # output weight files.
+    if not merge:
+        paths['wgt_template'] = weight
 
     gs = GridSplitter(rd_src, rd_dst, nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
                       dst_grid_resolution=dst_resolution, buffer_value=buffer_distance)
@@ -88,7 +91,9 @@ def chunker(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_ty
 
     # Remove the working directory unless the persist flag is provided.
     if not persist:
-        shutil.rmtree(wd)
+        if ocgis.vm.rank == 0:
+            shutil.rmtree(wd)
+        ocgis.vm.barrier()
 
     return 0
 
