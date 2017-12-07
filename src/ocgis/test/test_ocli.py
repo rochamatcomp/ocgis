@@ -48,21 +48,13 @@ class Test(TestBase):
         result = runner.invoke(ocli)
         self.assertEqual(result.exit_code, 0)
 
-    def test_init_chunker(self):
-        poss = self.fixture_flags_good()
-
-        runner = CliRunner()
-        cli_args = ['chunker', '-s', poss.source[0], '-d', poss.destination[0], '-w', poss.weight[0]]
-        result = runner.invoke(ocli, cli_args)
-        self.assertEqual(result.exit_code, 0)
-
     @mock.patch('os.makedirs')
     @mock.patch('shutil.rmtree')
     @mock.patch('tempfile.mkdtemp')
     @mock.patch('ocli.GridSplitter')
     @mock.patch('ocli.RequestDataset')
     @attr('mpi')
-    def test_system_combinations(self, mRequestDataset, mGridSplitter, m_mkdtemp, m_rmtree, m_makedirs):
+    def test_system_mock_combinations(self, mRequestDataset, mGridSplitter, m_mkdtemp, m_rmtree, m_makedirs):
         if ocgis.vm.size not in [1, 2]:
             raise SkipTest('ocgis.vm.size not in [1, 2]')
 
