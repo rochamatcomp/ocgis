@@ -47,8 +47,9 @@ Definitions for various "attrs":
  * data: test requires a data file
  * icclim: test requires ICCLIM
  * benchmark: test used for benchmarking/performance
+ * cli: test related to the command line interface. requires click as a dependency.
 
-nosetests -vs --with-id -a '!slow,!remote' ocgisf
+nosetests -vs --with-id -a '!slow,!remote' ocgis
 """
 
 
