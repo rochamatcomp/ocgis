@@ -5,7 +5,7 @@ import mock
 import ocgis
 from ocgis import RequestDataset, GridSplitter
 from ocgis.constants import DriverKey
-from ocgis.test.base import TestBase, attr
+from ocgis.test.base import TestBase, attr, create_gridxy_global, create_exact_field
 from click.testing import CliRunner
 
 from ocgis.util.addict import Dict
@@ -117,3 +117,21 @@ class Test(TestBase):
             mocks = [mRequestDataset, mGridSplitter, m_mkdtemp, m_rmtree, m_makedirs]
             for m in mocks:
                 m.reset_mock()
+
+    def test_chunker(self):
+        src_grid = create_gridxy_global()
+        dst_grid = create_gridxy_global(resolution=1.1)
+
+        src_field = create_exact_field(src_grid, 'foo')
+        dst_field = create_exact_field(dst_grid, 'foo')
+
+        source = self.get_temporary_file_path('source.nc')
+        src_field.write(source)
+        destination = self.get_temporary_file_path('destination.nc')
+        dst_field.write(destination)
+
+        runner = CliRunner()
+        cli_args = ['chunker', '--source', source, '--destination', destination, '--nchunks_dst', '2,3']
+        result = runner.invoke(ocli, args=cli_args)
+        import ipdb;ipdb.set_trace()
+        self.assertEqual(result.exit_code, 0)
