@@ -20,7 +20,7 @@ def ocli():
     pass
 
 
-@ocli.command(help='Chunk two grids using a spatial decomposition.')
+@ocli.command(help='Chunk two grids using a spatial decomposition or create a merged global weight file from chunks.')
 @click.option('-s', '--source', required=True, type=click.Path(exists=True, dir_okay=False),
               help='Path to the source grid NetCDF file.')
 @click.option('-d', '--destination', required=True, type=click.Path(exists=True, dir_okay=False),
