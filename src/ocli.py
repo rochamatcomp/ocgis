@@ -25,10 +25,10 @@ def ocli():
               help='Path to the source grid NetCDF file.')
 @click.option('-d', '--destination', required=True, type=click.Path(exists=True, dir_okay=False),
               help='Path to the destination grid NetCDF file.')
-@click.option('-w', '--weight', required=True, type=click.Path(exists=False, dir_okay=False),
-              help='Path to the output global weight file or prefix for the weight file.')
 @click.option('-n', '--nchunks_dst',
               help='Single integer or sequence defining the chunking decomposition for the destination grid.')
+@click.option('-w', '--weight', required=False, type=click.Path(exists=False, dir_okay=False),
+              help='Path to the output global weight file or prefix for the weight file.')
 @click.option('--esmf_src_type', type=str, nargs=1, default='GRIDSPEC',
               help='ESMF source grid type.')
 @click.option('--esmf_dst_type', type=str, nargs=1, default='GRIDSPEC',
@@ -42,7 +42,7 @@ def ocli():
                    'of a destination grid or chunk.')
 @click.option('--wd', type=click.Path(exists=False), default=None,
               help='Base working directory for output intermediate files.')
-@click.option('--persist/--no_persist', default=False,
+@click.option('--persist/--no_persist', default=True,
               help='If present, do not remove the working directory --wd following execution.')
 @click.option('--merge/--no_merge', default=False,
               help='If present, do not merge weight file chunks into a global weight file.')
@@ -66,20 +66,20 @@ def chunker(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_ty
                 wd = tempfile.mkdtemp(prefix='ocgis_chunker_', dir=os.getcwd())
             wd = ocgis.vm.bcast(wd)
         else:
-            # The working directory must not exist to proceed.
-            if os.path.exists(wd):
-                raise ValueError("Working directory 'wd' must not exist.")
-            else:
-                # Make the working directory nesting as needed.
-                if ocgis.vm.rank == 0:
+            if ocgis.vm.rank == 0:
+                # The working directory must not exist to proceed.
+                if os.path.exists(wd):
+                    raise ValueError("Working directory 'wd' must not exist.")
+                else:
+                    # Make the working directory nesting as needed.
                     os.makedirs(wd)
-                ocgis.vm.barrier()
+            ocgis.vm.barrier()
 
     # Update the paths to use for the grid chunker.
     paths = {'wd': wd}
     # If we are not merging the chunked weight files, the weight string value is the string template to use for the
     # output weight files.
-    if not merge:
+    if not merge and weight is not None:
         paths['wgt_template'] = weight
 
     gs = GridSplitter(rd_src, rd_dst, nchunks_dst, src_grid_resolution=src_resolution, paths=paths,

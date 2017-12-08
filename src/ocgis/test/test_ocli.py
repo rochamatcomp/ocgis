@@ -1,6 +1,7 @@
 from unittest import SkipTest
 
 import mock
+import os
 
 import ocgis
 from ocgis import RequestDataset, GridSplitter
@@ -37,7 +38,7 @@ class Test(TestBase):
         poss.dst_resolution = ['__exclude__', '2.0']
         poss.buffer_distance = ['__exclude__', '3.0']
         poss.wd = ['__exclude__', self.get_temporary_file_path('wd')]
-        poss.persist = ['__exclude__', '__include__']
+        poss.no_persist = ['__exclude__', '__include__']
         poss.merge = ['__exclude__', '__include__']
 
         return poss
@@ -89,15 +90,18 @@ class Test(TestBase):
             mGridSplitter.assert_called_once()
             instance = mGridSplitter.return_value
             call_args = mGridSplitter.call_args
+
             if k['wd'] == '__exclude__' and 'merge' not in new_poss:
                 actual = call_args[1]['paths']['wd']
                 self.assertEqual(actual, m_mkdtemp.return_value)
+
             if 'merge' in new_poss:
                 instance.create_merged_weight_file.assert_called_once_with(new_poss['weight'])
             else:
                 self.assertEqual(call_args[1]['paths']['wgt_template'], new_poss['weight'])
                 instance.create_merged_weight_file.assert_not_called()
                 instance.write_subsets.assert_called_once()
+
             if k['nchunks_dst'] == '1,1':
                 self.assertEqual(call_args[0][2], (1, 1))
             else:
@@ -120,7 +124,7 @@ class Test(TestBase):
                 m_mkdtemp.assert_not_called()
                 m_makedirs.assert_not_called()
 
-            if 'persist' not in new_poss:
+            if 'no_persist' in new_poss:
                 if ocgis.vm.rank == 0:
                     m_rmtree.assert_called_once()
                 else:
@@ -132,21 +136,34 @@ class Test(TestBase):
             for m in mocks:
                 m.reset_mock()
 
+    @attr('mpi')
     def test_chunker(self):
-        # tdk: finish test
+        if ocgis.vm.size not in [1, 4]:
+            raise SkipTest('ocgis.vm.size not in [1, 4]')
+
+        self.add_barrier = False
         src_grid = create_gridxy_global()
         dst_grid = create_gridxy_global(resolution=1.1)
 
         src_field = create_exact_field(src_grid, 'foo')
         dst_field = create_exact_field(dst_grid, 'foo')
 
-        source = self.get_temporary_file_path('source.nc')
+        if ocgis.vm.rank == 0:
+            source = self.get_temporary_file_path('source.nc')
+        else:
+            source = None
+        source = ocgis.vm.bcast(source)
         src_field.write(source)
-        destination = self.get_temporary_file_path('destination.nc')
+        if ocgis.vm.rank == 0:
+            destination = self.get_temporary_file_path('destination.nc')
+        else:
+            destination = None
+        destination = ocgis.vm.bcast(destination)
         dst_field.write(destination)
 
         runner = CliRunner()
-        cli_args = ['chunker', '--source', source, '--destination', destination, '--nchunks_dst', '2,3']
-        result = runner.invoke(ocli, args=cli_args)
-        import ipdb;ipdb.set_trace()
+        wd = os.path.join(self.current_dir_output, 'chunks')
+        cli_args = ['chunker', '--source', source, '--destination', destination, '--nchunks_dst', '2,3', '--wd', wd]
+        result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
+        self.assertTrue(len(os.listdir(wd)) > 3)
