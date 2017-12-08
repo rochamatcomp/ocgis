@@ -141,7 +141,6 @@ class Test(TestBase):
         if ocgis.vm.size not in [1, 4]:
             raise SkipTest('ocgis.vm.size not in [1, 4]')
 
-        self.add_barrier = False
         src_grid = create_gridxy_global()
         dst_grid = create_gridxy_global(resolution=1.1)
 
