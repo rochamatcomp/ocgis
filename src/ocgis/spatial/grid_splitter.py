@@ -80,6 +80,7 @@ class GridSplitter(AbstractOcgisObject):
                  src_grid_resolution=None, dst_grid_resolution=None, optimized_bbox_subset='auto', iter_dst=None,
                  buffer_value=None, redistribute=False):
         # TODO: Need to test with an unstructured grid as destination.
+        # tdk: LAST: make nsplits_dst an optional parameter. this will make it easier to do a merge-only operation.
 
         self._src_grid = None
         self._dst_grid = None

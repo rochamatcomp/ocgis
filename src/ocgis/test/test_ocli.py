@@ -30,7 +30,6 @@ class Test(TestBase):
 
         poss.source = [source]
         poss.destination = [destination]
-        poss.weight = [self.get_temporary_file_path('weights.nc'), self.get_temporary_file_path('weight_chunk_')]
         poss.nchunks_dst = ['1,1', '1']
         poss.esmf_src_type = ['__exclude__', 'GRIDSPEC']
         poss.esmf_dst_type = ['__exclude__', 'GRIDSPEC']
@@ -39,7 +38,7 @@ class Test(TestBase):
         poss.buffer_distance = ['__exclude__', '3.0']
         poss.wd = ['__exclude__', self.get_temporary_file_path('wd')]
         poss.persist = ['__exclude__', '__include__']
-        poss.no_merge = ['__exclude__', '__include__']
+        poss.merge = ['__exclude__', '__include__']
 
         return poss
 
@@ -58,6 +57,9 @@ class Test(TestBase):
         if ocgis.vm.size not in [1, 2]:
             raise SkipTest('ocgis.vm.size not in [1, 2]')
 
+        poss_weight = {'filename': self.get_temporary_file_path('weights.nc'),
+                       'prefix': self.get_temporary_file_path('weight_chunk_')}
+
         m_mkdtemp.return_value = 'mkdtemp return value'
 
         poss = self.fixture_flags_good()
@@ -72,6 +74,13 @@ class Test(TestBase):
                 if v2 != '__include__':
                     cli_args.append(v2)
 
+            if 'merge' in new_poss:
+                weight = poss_weight['filename']
+            else:
+                weight = poss_weight['prefix']
+            new_poss['weight'] = weight
+            cli_args.extend(['--weight', weight])
+
             # print cli_args
             runner = CliRunner()
             result = runner.invoke(ocli, args=cli_args)
@@ -79,16 +88,16 @@ class Test(TestBase):
 
             mGridSplitter.assert_called_once()
             instance = mGridSplitter.return_value
-            instance.write_subsets.assert_called_once()
             call_args = mGridSplitter.call_args
-            if k['wd'] == '__exclude__':
+            if k['wd'] == '__exclude__' and 'merge' not in new_poss:
                 actual = call_args[1]['paths']['wd']
                 self.assertEqual(actual, m_mkdtemp.return_value)
-            if 'no_merge' not in new_poss:
+            if 'merge' in new_poss:
                 instance.create_merged_weight_file.assert_called_once_with(new_poss['weight'])
             else:
-                self.assertEqual(call_args[1]['paths']['wgt_template'], k['weight'])
+                self.assertEqual(call_args[1]['paths']['wgt_template'], new_poss['weight'])
                 instance.create_merged_weight_file.assert_not_called()
+                instance.write_subsets.assert_called_once()
             if k['nchunks_dst'] == '1,1':
                 self.assertEqual(call_args[0][2], (1, 1))
             else:
@@ -96,16 +105,21 @@ class Test(TestBase):
 
             self.assertEqual(mRequestDataset.call_count, 2)
 
-            if 'wd' not in new_poss:
-                if ocgis.vm.rank == 0:
-                    m_mkdtemp.assert_called_once()
+            if 'merge' not in new_poss:
+                if 'wd' not in new_poss:
+                    if ocgis.vm.rank == 0:
+                        m_mkdtemp.assert_called_once()
+                    else:
+                        m_mkdtemp.assert_not_called()
                 else:
-                    m_mkdtemp.assert_not_called()
+                    if ocgis.vm.rank == 0:
+                        m_makedirs.assert_called_once()
+                    else:
+                        m_makedirs.assert_not_called()
             else:
-                if ocgis.vm.rank == 0:
-                    m_makedirs.assert_called_once()
-                else:
-                    m_makedirs.assert_not_called()
+                m_mkdtemp.assert_not_called()
+                m_makedirs.assert_not_called()
+
             if 'persist' not in new_poss:
                 if ocgis.vm.rank == 0:
                     m_rmtree.assert_called_once()
@@ -119,6 +133,7 @@ class Test(TestBase):
                 m.reset_mock()
 
     def test_chunker(self):
+        # tdk: finish test
         src_grid = create_gridxy_global()
         dst_grid = create_gridxy_global(resolution=1.1)
 
