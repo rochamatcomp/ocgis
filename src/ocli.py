@@ -23,7 +23,7 @@ def ocli():
     pass
 
 
-@ocli.command(help='Chunk two grids using a spatial decomposition or create a merged global weight file from chunks.')
+@ocli.command(help='CESM grid manipulations to assist in regridding.')
 @click.option('-s', '--source', required=True, type=click.Path(exists=True, dir_okay=False),
               help='Path to the source grid NetCDF file.')
 @click.option('-d', '--destination', required=True, type=click.Path(exists=True, dir_okay=False),
@@ -51,9 +51,8 @@ def ocli():
               help='If present, do not merge weight file chunks into a global weight file.')
 @click.option('--spatial_subset/--no_spatial_subset', default=False,
               help='Subset the destination grid by the bounding box spatial extent of the source grid.')
-def chunker(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, src_resolution, dst_resolution,
-            buffer_distance, wd, persist, merge, spatial_subset):
-    # tdk: RENAME: "chunker" to something that indicates splitting and subsetting
+def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, src_resolution, dst_resolution,
+               buffer_distance, wd, persist, merge, spatial_subset):
     if not spatial_subset:
         if nchunks_dst is None:
             raise ValueError("'nchunks_dst' may not be None if --no_spatial_subset")
@@ -96,7 +95,7 @@ def chunker(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_ty
         sub_dst.write(os.path.join(wd, 'spatial_subset.nc'))
     # Only split grids if a spatial subset is not requested.
     else:
-        # Update the paths to use for the grid chunker.
+        # Update the paths to use for the grid cesm_manip.
         paths = {'wd': wd}
         # If we are not merging the chunked weight files, the weight string value is the string template to use for the
         # output weight files.

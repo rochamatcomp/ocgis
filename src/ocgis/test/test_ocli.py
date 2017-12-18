@@ -10,7 +10,7 @@ from ocgis.test.base import TestBase, attr, create_gridxy_global, create_exact_f
 from click.testing import CliRunner
 
 from ocgis.util.addict import Dict
-from ocli import ocli, chunker
+from ocli import ocli, cesm_manip
 
 
 #tdk: modify nose testing implementation to not load this file? how to deal with click?
@@ -69,7 +69,7 @@ class Test(TestBase):
             for k2, v2 in k.items():
                 if v2 != '__exclude__':
                     new_poss[k2] = v2
-            cli_args = ['chunker']
+            cli_args = ['cesm_manip']
             for k2, v2 in new_poss.items():
                 cli_args.append('--{}'.format(k2))
                 if v2 != '__include__':
@@ -137,7 +137,7 @@ class Test(TestBase):
                 m.reset_mock()
 
     @attr('mpi')
-    def test_chunker(self):
+    def test_cesm_manip(self):
         if ocgis.vm.size not in [1, 4]:
             raise SkipTest('ocgis.vm.size not in [1, 4]')
 
@@ -162,12 +162,12 @@ class Test(TestBase):
 
         runner = CliRunner()
         wd = os.path.join(self.current_dir_output, 'chunks')
-        cli_args = ['chunker', '--source', source, '--destination', destination, '--nchunks_dst', '2,3', '--wd', wd]
+        cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--nchunks_dst', '2,3', '--wd', wd]
         result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         self.assertTrue(len(os.listdir(wd)) > 3)
 
-    def test_chunker_spatial_subset(self):
+    def test_cesm_manip_spatial_subset(self):
         dst_grid = create_gridxy_global()
         dst_field = create_exact_field(dst_grid, 'foo')
 
@@ -191,7 +191,7 @@ class Test(TestBase):
 
         runner = CliRunner()
         wd = os.path.join(self.current_dir_output, 'chunks')
-        cli_args = ['chunker', '--source', source, '--destination', destination, '--wd', wd, '--spatial_subset']
+        cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--wd', wd, '--spatial_subset']
         result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
 
