@@ -10,9 +10,12 @@ import click
 # tdk: LAST: harmonize GridSplitter param names with final interface names
 import os
 
+from shapely.geometry import box
+
 import ocgis
-from ocgis import RequestDataset, GridSplitter
+from ocgis import RequestDataset, GridSplitter, GeometryVariable
 from ocgis.constants import DriverKey
+from ocgis.spatial.spatial_subset import SpatialSubsetOperation
 
 
 @click.group()
@@ -46,13 +49,20 @@ def ocli():
               help='If present, do not remove the working directory --wd following execution.')
 @click.option('--merge/--no_merge', default=False,
               help='If present, do not merge weight file chunks into a global weight file.')
-def chunker(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, src_resolution, dst_resolution, buffer_distance, wd, persist, merge):
-    # Format the chunking decomposition from its string representation.
-    if ',' in nchunks_dst:
-        nchunks_dst = nchunks_dst.split(',')
-    else:
-        nchunks_dst = [nchunks_dst]
-    nchunks_dst = tuple([int(ii) for ii in nchunks_dst])
+@click.option('--spatial_subset/--no_spatial_subset', default=False,
+              help='Subset the destination grid by the bounding box spatial extent of the source grid.')
+def chunker(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, src_resolution, dst_resolution,
+            buffer_distance, wd, persist, merge, spatial_subset):
+    # tdk: RENAME: "chunker" to something that indicates splitting and subsetting
+    if not spatial_subset:
+        if nchunks_dst is None:
+            raise ValueError("'nchunks_dst' may not be None if --no_spatial_subset")
+        # Format the chunking decomposition from its string representation.
+        if ',' in nchunks_dst:
+            nchunks_dst = nchunks_dst.split(',')
+        else:
+            nchunks_dst = [nchunks_dst]
+        nchunks_dst = tuple([int(ii) for ii in nchunks_dst])
 
     # Create the source and destination request datasets.
     rd_src = create_request_dataset(source, esmf_src_type)
@@ -75,22 +85,34 @@ def chunker(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_ty
                     os.makedirs(wd)
             ocgis.vm.barrier()
 
-    # Update the paths to use for the grid chunker.
-    paths = {'wd': wd}
-    # If we are not merging the chunked weight files, the weight string value is the string template to use for the
-    # output weight files.
-    if not merge and weight is not None:
-        paths['wgt_template'] = weight
+    if spatial_subset:
+        src_field = rd_src.create_field()
+        dst_field = rd_dst.create_field()
+        sso = SpatialSubsetOperation(dst_field)
+        subset_geom = GeometryVariable.from_shapely(box(*src_field.grid.extent_global), crs=src_field.crs, is_bbox=True)
+        sub_dst = sso.get_spatial_subset('intersects', subset_geom, buffer_value=2.*dst_field.grid.resolution,
+                                         optimized_bbox_subset=True)
+        sub_dst.write(os.path.join(wd, 'spatial_subset.nc'))
+    else:
+        # Update the paths to use for the grid chunker.
+        paths = {'wd': wd}
+        # If we are not merging the chunked weight files, the weight string value is the string template to use for the
+        # output weight files.
+        if not merge and weight is not None:
+            paths['wgt_template'] = weight
 
-    gs = GridSplitter(rd_src, rd_dst, nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
-                      dst_grid_resolution=dst_resolution, buffer_value=buffer_distance)
+        gs = GridSplitter(rd_src, rd_dst, nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
+                          dst_grid_resolution=dst_resolution, buffer_value=buffer_distance)
 
     # Create the global weight file.
     if merge:
         gs.create_merged_weight_file(weight)
-    else:
+    elif not spatial_subset:
         # Write the subsets. Only do this if this is not a merge operation.
         gs.write_subsets()
+    else:
+        assert spatial_subset
+        assert not merge
 
     # Remove the working directory unless the persist flag is provided.
     if not persist:

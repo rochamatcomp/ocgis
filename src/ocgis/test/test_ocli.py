@@ -4,7 +4,7 @@ import mock
 import os
 
 import ocgis
-from ocgis import RequestDataset, GridSplitter
+from ocgis import RequestDataset, GridSplitter, Variable, Grid
 from ocgis.constants import DriverKey
 from ocgis.test.base import TestBase, attr, create_gridxy_global, create_exact_field
 from click.testing import CliRunner
@@ -166,3 +166,40 @@ class Test(TestBase):
         result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         self.assertTrue(len(os.listdir(wd)) > 3)
+
+    def test_chunker_spatial_subset(self):
+        dst_grid = create_gridxy_global()
+        dst_field = create_exact_field(dst_grid, 'foo')
+
+        xvar = Variable(name='x', value=[-90.], dimensions='xdim')
+        yvar = Variable(name='y', value=[40.],  dimensions='ydim')
+        src_grid = Grid(x=xvar, y=yvar)
+
+        if ocgis.vm.rank == 0:
+            source = self.get_temporary_file_path('source.nc')
+        else:
+            source = None
+        source = ocgis.vm.bcast(source)
+        src_grid.write(source)
+
+        if ocgis.vm.rank == 0:
+            destination = self.get_temporary_file_path('destination.nc')
+        else:
+            destination = None
+        destination = ocgis.vm.bcast(destination)
+        dst_field.write(destination)
+
+        runner = CliRunner()
+        wd = os.path.join(self.current_dir_output, 'chunks')
+        cli_args = ['chunker', '--source', source, '--destination', destination, '--wd', wd, '--spatial_subset']
+        result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
+        self.assertEqual(result.exit_code, 0)
+
+        dst_path = os.path.join(wd, 'spatial_subset.nc')
+
+        actual = RequestDataset(uri=dst_path).create_field()
+        actual_ymean = actual.grid.get_value_stacked()[0].mean()
+        actual_xmean = actual.grid.get_value_stacked()[1].mean()
+        self.assertEqual(actual_ymean, 40.)
+        self.assertEqual(actual_xmean, -90.)
+        self.assertEqual(actual.grid.shape, (4, 4))
