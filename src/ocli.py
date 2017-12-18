@@ -85,6 +85,7 @@ def chunker(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_ty
                     os.makedirs(wd)
             ocgis.vm.barrier()
 
+    # Execute a spatial subset if requested.
     if spatial_subset:
         src_field = rd_src.create_field()
         dst_field = rd_dst.create_field()
@@ -93,6 +94,7 @@ def chunker(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_ty
         sub_dst = sso.get_spatial_subset('intersects', subset_geom, buffer_value=2.*dst_field.grid.resolution,
                                          optimized_bbox_subset=True)
         sub_dst.write(os.path.join(wd, 'spatial_subset.nc'))
+    # Only split grids if a spatial subset is not requested.
     else:
         # Update the paths to use for the grid chunker.
         paths = {'wd': wd}
