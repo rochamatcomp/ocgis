@@ -72,7 +72,7 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
     if not merge:
         if wd is None:
             if ocgis.vm.rank == 0:
-                wd = tempfile.mkdtemp(prefix='ocgis_chunker_', dir=os.getcwd())
+                wd = tempfile.mkdtemp(prefix='ocgis_cesm_manip_', dir=os.getcwd())
             wd = ocgis.vm.bcast(wd)
         else:
             if ocgis.vm.rank == 0:
@@ -86,13 +86,16 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
 
     # Execute a spatial subset if requested.
     if spatial_subset:
+        # tdk: HACK: this is sensitive and should be replaced with more robust code. there is also an opportunity to simplify subsetting by incorporating the spatial subset operation object into subsetting itself.
         src_field = rd_src.create_field()
         dst_field = rd_dst.create_field()
         sso = SpatialSubsetOperation(dst_field)
         subset_geom = GeometryVariable.from_shapely(box(*src_field.grid.extent_global), crs=src_field.crs, is_bbox=True)
         sub_dst = sso.get_spatial_subset('intersects', subset_geom, buffer_value=2.*dst_field.grid.resolution,
                                          optimized_bbox_subset=True)
+        # tdk: should this be a parameter?
         sub_dst.write(os.path.join(wd, 'spatial_subset.nc'))
+        # tdk: /hack
     # Only split grids if a spatial subset is not requested.
     else:
         # Update the paths to use for the grid cesm_manip.
@@ -122,6 +125,12 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
         ocgis.vm.barrier()
 
     return 0
+
+
+@ocli.command(help='blah')
+def tester():
+    # tdk: remove me
+    print(ocgis.vm.size_global)
 
 
 def create_request_dataset(path, esmf_type):
