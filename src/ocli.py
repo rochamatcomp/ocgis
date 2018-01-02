@@ -46,9 +46,9 @@ def ocli():
 @click.option('--wd', type=click.Path(exists=False), default=None,
               help='Base working directory for output intermediate files.')
 @click.option('--persist/--no_persist', default=True,
-              help='If present, do not remove the working directory --wd following execution.')
+              help='If --persist, do not remove the working directory --wd following execution.')
 @click.option('--merge/--no_merge', default=False,
-              help='If present, do not merge weight file chunks into a global weight file.')
+              help='If --no_merge, do not merge weight file chunks into a global weight file.')
 @click.option('--spatial_subset/--no_spatial_subset', default=False,
               help='Subset the destination grid by the bounding box spatial extent of the source grid.')
 def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, src_resolution, dst_resolution,
