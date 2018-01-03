@@ -90,8 +90,11 @@ class RequestDataset(AbstractRequestObject):
     :param conform_units_to: Destination units for conversion. If this parameter is set, then the :mod:`cf_units` module
      must be installed.
     :type conform_units_to: :class:`str` | :class:`cfunits.Units` | `sequence` of possible types
-    :param str driver: If ``None``, autodiscover the appropriate driver. Acceptable values are listed below.
+    :param driver: If ``None``, autodiscover the appropriate driver. Acceptable values are listed below. Class objects
+     for the associated driver key are also accepted.
+    :type driver: str | :class:`~ocgis.driver.base.AbstractDriver`
 
+    #tdk: DOC: update driver table
     ============= ================= =============================================
     Value         File Extension(s) Description
     ============= ================= =============================================

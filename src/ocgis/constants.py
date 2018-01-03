@@ -373,6 +373,7 @@ class DriverKey(object):
     NETCDF = 'netcdf'
     NETCDF_CF = 'netcdf-cf'
     NETCDF_ESMF_UNSTRUCT = 'netcdf-esmf-unstruct'
+    NETCDF_SCRIP = 'netcdf-scrip'
     VECTOR = 'vector'
     NETCDF_UGRID = 'netcdf-ugrid'
 
