@@ -362,41 +362,28 @@ class Grid(AbstractGrid, AbstractXYZSpatialContainer):
 
     @property
     def resolution(self):
-        y_value = self.y.get_value()
-        x_value = self.x.get_value()
-        resolution_limit = constants.RESOLUTION_LIMIT
-        if self.is_vectorized:
-            targets = [np.abs(np.diff(np.abs(y_value[0:resolution_limit]))),
-                       np.abs(np.diff(np.abs(x_value[0:resolution_limit])))]
-        else:
-            if 1 in self.shape:
-                # Handle case singleton grid dimension case.
-                targets = []
-                if self.shape[0] != 1:
-                    targets.append(np.abs(np.diff(np.abs(y_value[0:resolution_limit, :]), axis=0)))
-                if self.shape[1] != 1:
-                    targets.append(np.abs(np.diff(np.abs(x_value[:, 0:resolution_limit]), axis=1)))
+        #tdk: DOC
+        if 1 in self.shape:
+            if self.shape[0] != 1:
+                ret = self.resolution_y
+            elif self.shape[1] != 1:
+                ret = self.resolution_x
             else:
-                targets = [np.abs(np.diff(np.abs(y_value[0:resolution_limit, :]), axis=0)),
-                           np.abs(np.diff(np.abs(x_value[:, 0:resolution_limit]), axis=1))]
-        to_mean = [np.mean(t) for t in targets]
-        ret = np.mean(to_mean)
+                raise NotImplementedError(self.shape)
+        else:
+            ret = np.mean([self.resolution_y, self.resolution_x])
+
         return ret
 
     @property
     def resolution_x(self):
-        x_value = self.x.get_value()
-        if x_value.size == 1:
-            return 0.0
-        else:
-            resolution_limit = constants.RESOLUTION_LIMIT
-            is_vectorized = x_value.ndim == 1
-            if is_vectorized:
-                target = np.abs(np.diff(np.abs(x_value[0:resolution_limit])))
-            else:
-                target = np.abs(np.diff(np.abs(x_value[:, 0:resolution_limit]), axis=1))
-            ret = np.mean(target)
-            return ret
+        #tdk: DOC
+        return array_resolution(self.x.get_value(), 1)
+
+    @property
+    def resolution_y(self):
+        #tdk: DOC
+        return array_resolution(self.y.get_value(), 0)
 
     @property
     def shape(self):
@@ -1095,6 +1082,25 @@ class GridUnstruct(AbstractGrid):
 
     def _gs_create_index_bounds_(self, *args, **kwargs):
         pass
+
+
+def array_resolution(value, axis):
+    if value.size == 1:
+        return 0.0
+    else:
+        resolution_limit = constants.RESOLUTION_LIMIT
+        is_vectorized = value.ndim == 1
+        if is_vectorized:
+            target = np.abs(np.diff(np.abs(value[0:resolution_limit])))
+        else:
+            if axis == 0:
+                target = np.abs(np.diff(np.abs(value[:, 0:resolution_limit]), axis=axis))
+            elif axis == 1:
+                target = np.abs(np.diff(np.abs(value[0:resolution_limit, :]), axis=axis))
+            else:
+                raise NotImplementedError(axis)
+        ret = np.mean(target)
+        return ret
 
 
 def arr_intersects_bounds(arr, lower, upper, keep_touches=True, section_slice=None):
