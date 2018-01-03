@@ -16,6 +16,7 @@ class TestDriverScripNetcdf(TestBase):
         self.assertIsInstance(d, DriverScripNetcdf)
 
     def test_create_field(self):
+        # tdk: test with bounds and corners handled
         meta = {'dimensions': {u'grid_corners': {'isunlimited': False,
                                   'name': u'grid_corners',
                                   'size': 4},
@@ -88,5 +89,3 @@ class TestDriverScripNetcdf(TestBase):
         desired = meta['dimensions']['grid_size']['size']
         actual = field.grid.element_dim.size
         self.assertEqual(desired, actual)
-        import ipdb;
-        ipdb.set_trace()
