@@ -173,14 +173,15 @@ class Test(TestBase):
 
     @attr('mpi')
     def test_cesm_manip(self):
+        # tdk: needs to work in parallel
         env.CLOBBER_UNITS_ON_BOUNDS = False
 
         if ocgis.vm.size not in [1, 4]:
             raise SkipTest('ocgis.vm.size not in [1, 4]')
 
-        src_grid = create_gridxy_global(resolution=10)
+        src_grid = create_gridxy_global(resolution=15)
         # tdk: consider using slightly different resolutions
-        dst_grid = create_gridxy_global(resolution=10)
+        dst_grid = create_gridxy_global(resolution=12)
 
         src_field = create_exact_field(src_grid, 'foo', crs=Spherical())
         dst_field = create_exact_field(dst_grid, 'foo', crs=Spherical())
@@ -198,6 +199,7 @@ class Test(TestBase):
         destination = ocgis.vm.bcast(destination)
         dst_field.write(destination)
 
+        # Generate the source and destination chunks.
         runner = CliRunner()
         wd = os.path.join(self.current_dir_output, 'chunks')
         cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--nchunks_dst', '2,3', '--wd', wd]
@@ -218,20 +220,20 @@ class Test(TestBase):
                    'GRIDSPEC', '-w', wgt_path, '--method', 'conserve', '--no-log', '-r', '--weight-only']
             subprocess.check_call(cmd)
 
+        # Create a global weights file from the individual weight files.
         merged_weights = os.path.join(wd, 'merged_weights.nc')
         cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--wd', wd, '--nchunks_dst', '2,3',
                     '--merge', '--weight', merged_weights]
         result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
 
+        # Create a standard ESMF weights file from the original grid files.
         esmf_weights_path = self.get_temporary_file_path('esmf_desired_weights.nc')
         cmd = ['ESMF_RegridWeightGen', '-s', source, '--src_type', 'GRIDSPEC', '-d', destination, '--dst_type',
                'GRIDSPEC', '-w', esmf_weights_path, '--method', 'conserve', '--no-log']
         subprocess.check_call(cmd)
 
         self.assertWeightFilesEquivalent(esmf_weights_path, merged_weights)
-
-        # tdk: RESUME: get this working for differing resolutions
 
     def test_cesm_manip_spatial_subset(self):
         dst_grid = create_gridxy_global()
