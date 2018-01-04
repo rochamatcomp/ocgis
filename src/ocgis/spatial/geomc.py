@@ -216,10 +216,6 @@ class AbstractGeometryCoordinates(AbstractXYZSpatialContainer):
         return self.archetype.dimensions[0]
 
     @property
-    def resolution(self):
-        raise NotImplementedError('Unstructured data does not have a resolution.')
-
-    @property
     def shape(self):
         """
         Get the current size of the element dimension as a tuple. For example: ``(5,)``.

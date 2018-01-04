@@ -1,7 +1,7 @@
 import numpy as np
 from mock import mock
 
-from ocgis import RequestDataset, DimensionMap, Grid, GridUnstruct
+from ocgis import RequestDataset, DimensionMap, Grid, GridUnstruct, PointGC, Field, Variable
 from ocgis.constants import DriverKey, DMK, Topology
 from ocgis.driver.nc_scrip import DriverScripNetcdf
 from ocgis.test.base import TestBase
@@ -15,8 +15,41 @@ class TestDriverScripNetcdf(TestBase):
         d = DriverScripNetcdf(rd)
         self.assertIsInstance(d, DriverScripNetcdf)
 
+    def test_system_spatial_resolution(self):
+        """Test spatial resolution is computed appropriately."""
+        # tdk: REMOVE: this test is for development and can be taken away at the end
+        path = '/mnt/e24fbd51-d3a4-44e5-82a5-0e20b3487199/data/bekozi-work/i49-ugrid-cesm/0.9x1.25_c110307.nc'
+        rd = RequestDataset(path, driver=DriverKey.NETCDF_SCRIP)
+        field = rd.create_field()
+        self.assertEqual(field.driver.key, DriverKey.NETCDF_SCRIP)
+        self.assertEqual(field.grid.driver.key, DriverKey.NETCDF_SCRIP)
+
+        print field.grid.x.get_value()
+        print np.linspace(0, 358.75, num=55296)
+        print np.linspace()
+
+        self.assertEqual(field.grid.resolution_x, 1.25)
+        self.assertAlmostEqual(field.grid.resolution_y, 0.94240837696335089)
+
+    def test_array_resolution(self):
+        self.assertEqual(DriverScripNetcdf.array_resolution(np.array([5]), None), 0.0)
+        self.assertEqual(DriverScripNetcdf.array_resolution(np.array([-5, -10, 10, 5], dtype=float), None), 5.0)
+
+    def test_array_resolution_called(self):
+        """Test the driver's array resolution method is called appropriately."""
+
+        m_DriverScripNetcdf = mock.create_autospec(DriverScripNetcdf)
+        with mock.patch('ocgis.driver.registry.get_driver_class', return_value=m_DriverScripNetcdf):
+            x = Variable(name='x', value=[1, 2, 3], dimensions='dimx')
+            y = Variable(name='y', value=[4, 5, 6], dimensions='dimy')
+            pgc = PointGC(x=x, y=y)
+            _ = pgc.resolution_x
+            _ = pgc.resolution_y
+        self.assertEqual(m_DriverScripNetcdf.array_resolution.call_count, 2)
+
     def test_create_field(self):
         # tdk: test with bounds and corners handled
+        # tdk: RESUME: test that the data is distributed appropriately when loading in a scrip file in parallel
         meta = {'dimensions': {u'grid_corners': {'isunlimited': False,
                                   'name': u'grid_corners',
                                   'size': 4},
