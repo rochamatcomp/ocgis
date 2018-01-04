@@ -18,6 +18,10 @@ class DriverScripNetcdf(DriverNetcdf):
         topo = ret.get_topology(Topology.POINT, create=True)
         topo.set_variable(DMK.X, 'grid_center_lon', dimension='grid_size')
         topo.set_variable(DMK.Y, 'grid_center_lat', dimension='grid_size')
+
+        # The isomorphic property covers all possible mesh topologies.
+        ret.set_property(DMK.IS_ISOMORPHIC, True)
+
         return ret
 
     @staticmethod

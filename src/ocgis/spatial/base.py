@@ -6,7 +6,7 @@ import six
 from pyproj import Proj, transform
 from shapely.geometry import box
 
-from ocgis import Variable, SourcedVariable, vm
+from ocgis import Variable, SourcedVariable, vm, constants
 from ocgis.base import raise_if_empty, is_field, AbstractInterfaceObject
 from ocgis.constants import KeywordArgument, VariableName, WrapAction, DMK
 from ocgis.exc import GridDeficientError
@@ -291,6 +291,7 @@ class AbstractSpatialContainer(AbstractContainer, AbstractOperationsSpatialObjec
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractXYZSpatialContainer(AbstractSpatialContainer):
+    # tdk: doc
     def __init__(self, **kwargs):
         kwargs = kwargs.copy()
         x = kwargs.pop(KeywordArgument.X)
@@ -298,7 +299,7 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         z = kwargs.pop(KeywordArgument.Z, None)
         mask = kwargs.pop(KeywordArgument.MASK, None)
         pos = kwargs.pop(KeywordArgument.POS, (0, 1))
-        is_isomorphic = kwargs.pop('is_isomorphic', None)
+        is_isomorphic = kwargs.pop(DMK.IS_ISOMORPHIC, constants.UNINITIALIZED)
 
         parent = kwargs.get(KeywordArgument.PARENT, None)
 
@@ -342,7 +343,11 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
             self.dimension_map.set_spatial_mask(mask)
 
         # XYZ containers are not considered isomorphic (repeated topology or shapes) by default.
-        self.is_isomorphic = is_isomorphic
+        if is_isomorphic == constants.UNINITIALIZED:
+            if self.dimension_map.get_property(DMK.IS_ISOMORPHIC) is None:
+                is_isomorphic = False
+        if is_isomorphic != constants.UNINITIALIZED:
+            self.is_isomorphic = is_isomorphic
 
     @property
     def archetype(self):
@@ -383,6 +388,10 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
     def is_isomorphic(self):
         #tdk: doc
         return self.dimension_map.get_property(DMK.IS_ISOMORPHIC)
+
+    @is_isomorphic.setter
+    def is_isomorphic(self, value):
+        self.dimension_map.set_property(DMK.IS_ISOMORPHIC, value)
 
     @property
     def mask_variable(self):

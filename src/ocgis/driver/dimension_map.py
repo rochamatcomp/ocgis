@@ -404,6 +404,16 @@ class DimensionMap(AbstractOcgisObject):
         """
         _ = get_dmap_group(self, group_key, create=True, last=dimension_map)
 
+    def get_property(self, key, default=None):
+        #tdk: DOC
+        #tdk: ORDER
+        return self._storage.get(key, default)
+
+    def set_property(self, key, value):
+        # tdk: DOC
+        assert key in DMK.get_special_entry_keys()
+        self._storage[key] = value
+
     def set_spatial_mask(self, variable, attrs=None):
         """
         Set the spatial mask variable for the dimension map. If ``attrs`` is not ``None``, then ``attrs`` >

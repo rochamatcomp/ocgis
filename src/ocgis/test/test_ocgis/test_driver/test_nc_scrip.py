@@ -2,7 +2,7 @@ import numpy as np
 from mock import mock
 
 from ocgis import RequestDataset, DimensionMap, Grid, GridUnstruct
-from ocgis.constants import DriverKey
+from ocgis.constants import DriverKey, DMK, Topology
 from ocgis.driver.nc_scrip import DriverScripNetcdf
 from ocgis.test.base import TestBase
 from ocgis.variable.crs import Spherical
@@ -81,6 +81,9 @@ class TestDriverScripNetcdf(TestBase):
         dmap = d.create_dimension_map(meta)
         self.assertIsInstance(dmap, DimensionMap)
 
+        actual = dmap.get_property(DMK.IS_ISOMORPHIC)
+        self.assertTrue(actual)
+
         field = d.create_field()
 
         self.assertEqual(field.crs, Spherical())
@@ -89,3 +92,4 @@ class TestDriverScripNetcdf(TestBase):
         desired = meta['dimensions']['grid_size']['size']
         actual = field.grid.element_dim.size
         self.assertEqual(desired, actual)
+        self.assertTrue(field.grid.is_isomorphic)

@@ -1241,6 +1241,11 @@ class TestGridUnstruct(TestBase):
         for g in ug.geoms:
             self.assertTrue(g.hosted)
 
+        # Test unstructured grids are not considered isomorphic by default.
+        ug = self.fixture()
+        self.assertIsNotNone(ug.is_isomorphic)
+        self.assertFalse(ug.is_isomorphic)
+
     def test_system_setting_on_field(self):
         field = Field(driver=DriverNetcdfUGRID)
         self.assertIsNone(field.grid)

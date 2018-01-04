@@ -227,6 +227,9 @@ class Grid(AbstractGrid, AbstractXYZSpatialContainer):
         kwargs[KeywordArgument.POS] = pos
         abstraction = kwargs.pop(KeywordArgument.ABSTRACTION, KeywordArgument.Defaults.ABSTRACTION)
 
+        # Structured grids are always considered isomorphic.
+        kwargs[DMK.IS_ISOMORPHIC] = True
+
         AbstractXYZSpatialContainer.__init__(self, **kwargs)
         AbstractGrid.__init__(self, abstraction=abstraction)
 

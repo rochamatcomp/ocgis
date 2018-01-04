@@ -215,6 +215,7 @@ class DimensionMapKey(object):
     GEOM = 'geom'
     GRID_ABSTRACTION = 'grid_abstraction'
     GROUPS = 'groups'
+    IS_ISOMORPHIC = 'is_isomorphic'
     LEVEL = 'level'
     SECTION = 'section'
     SPATIAL_MASK = 'spatial_mask'
@@ -253,7 +254,7 @@ class DimensionMapKey(object):
 
     @classmethod
     def get_special_entry_keys(cls):
-        return cls.GRID_ABSTRACTION, cls.SPATIAL_MASK, cls.CRS, cls.DRIVER, cls.TOPOLOGY
+        return cls.GRID_ABSTRACTION, cls.SPATIAL_MASK, cls.CRS, cls.DRIVER, cls.TOPOLOGY, cls.IS_ISOMORPHIC
 
 
 class DMK(DimensionMapKey):
