@@ -361,31 +361,6 @@ class Grid(AbstractGrid, AbstractXYZSpatialContainer):
         return ret
 
     @property
-    def resolution(self):
-        #tdk: DOC
-        if 1 in self.shape:
-            if self.shape[0] != 1:
-                ret = self.resolution_y
-            elif self.shape[1] != 1:
-                ret = self.resolution_x
-            else:
-                raise NotImplementedError(self.shape)
-        else:
-            ret = np.mean([self.resolution_y, self.resolution_x])
-
-        return ret
-
-    @property
-    def resolution_x(self):
-        #tdk: DOC
-        return array_resolution(self.x.get_value(), 1)
-
-    @property
-    def resolution_y(self):
-        #tdk: DOC
-        return array_resolution(self.y.get_value(), 0)
-
-    @property
     def shape(self):
         """
         :rtype: :class:`tuple` of :class:`int`
@@ -1082,25 +1057,6 @@ class GridUnstruct(AbstractGrid):
 
     def _gs_create_index_bounds_(self, *args, **kwargs):
         pass
-
-
-def array_resolution(value, axis):
-    if value.size == 1:
-        return 0.0
-    else:
-        resolution_limit = constants.RESOLUTION_LIMIT
-        is_vectorized = value.ndim == 1
-        if is_vectorized:
-            target = np.abs(np.diff(np.abs(value[0:resolution_limit])))
-        else:
-            if axis == 0:
-                target = np.abs(np.diff(np.abs(value[:, 0:resolution_limit]), axis=axis))
-            elif axis == 1:
-                target = np.abs(np.diff(np.abs(value[0:resolution_limit, :]), axis=axis))
-            else:
-                raise NotImplementedError(axis)
-        ret = np.mean(target)
-        return ret
 
 
 def arr_intersects_bounds(arr, lower, upper, keep_touches=True, section_slice=None):

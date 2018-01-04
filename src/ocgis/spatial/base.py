@@ -387,6 +387,36 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         return ret
 
     @property
+    def resolution(self):
+        # tdk: DOC
+        if 1 in self.shape:
+            if self.shape[0] != 1:
+                ret = self.resolution_y
+            elif self.shape[1] != 1:
+                ret = self.resolution_x
+            else:
+                raise NotImplementedError(self.shape)
+        else:
+            ret = np.mean([self.resolution_y, self.resolution_x])
+
+        return ret
+
+    @property
+    def resolution_x(self):
+        # tdk: DOC
+        return self.driver.array_resolution(self.x.get_value(), 1)
+
+    @property
+    def resolution_y(self):
+        # tdk: DOC
+        return self.driver.array_resolution(self.y.get_value(), 0)
+
+    @property
+    def driver(self):
+        # tdk: this should be a generic property on all parented collections like this
+        return self.parent.driver
+
+    @property
     def shape_global(self):
         """
         Get the global shape across the current :class:`~ocgis.OcgVM`.

@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from warnings import warn
 
+import numpy as np
 import six
 
 from ocgis import constants, GridUnstruct
@@ -646,6 +647,12 @@ class AbstractDriver(AbstractOcgisObject):
         for write_mode in write_modes:
             cls._write_variable_collection_main_(vc, opened_or_path, write_mode, **kwargs)
 
+    @staticmethod
+    def array_resolution(value, axis):
+        # tdk: doc
+        # tdk: order
+        raise NotImplementedError
+
     @classmethod
     def _get_write_modes_(cls, the_vm, **kwargs):
         if the_vm.size > 1:
@@ -739,6 +746,31 @@ class AbstractTabularDriver(AbstractDriver):
             ret.append(['MONTH', None])
             ret.append(['DAY', None])
         return ret
+
+
+@six.add_metaclass(ABCMeta)
+class AbstractIsotropicDriver(AbstractOcgisObject):
+    #tdk: DOC
+
+    @staticmethod
+    def array_resolution(value, axis):
+        #tdk: doc
+        if value.size == 1:
+            return 0.0
+        else:
+            resolution_limit = constants.RESOLUTION_LIMIT
+            is_vectorized = value.ndim == 1
+            if is_vectorized:
+                target = np.abs(np.diff(np.abs(value[0:resolution_limit])))
+            else:
+                if axis == 0:
+                    target = np.abs(np.diff(np.abs(value[:, 0:resolution_limit]), axis=axis))
+                elif axis == 1:
+                    target = np.abs(np.diff(np.abs(value[0:resolution_limit, :]), axis=axis))
+                else:
+                    raise NotImplementedError(axis)
+            ret = np.mean(target)
+            return ret
 
 
 @six.add_metaclass(ABCMeta)
