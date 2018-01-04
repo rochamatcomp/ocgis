@@ -749,31 +749,6 @@ class AbstractTabularDriver(AbstractDriver):
 
 
 @six.add_metaclass(ABCMeta)
-class AbstractIsotropicDriver(AbstractOcgisObject):
-    #tdk: DOC
-
-    @staticmethod
-    def array_resolution(value, axis):
-        #tdk: doc
-        if value.size == 1:
-            return 0.0
-        else:
-            resolution_limit = constants.RESOLUTION_LIMIT
-            is_vectorized = value.ndim == 1
-            if is_vectorized:
-                target = np.abs(np.diff(np.abs(value[0:resolution_limit])))
-            else:
-                if axis == 0:
-                    target = np.abs(np.diff(np.abs(value[:, 0:resolution_limit]), axis=axis))
-                elif axis == 1:
-                    target = np.abs(np.diff(np.abs(value[0:resolution_limit, :]), axis=axis))
-                else:
-                    raise NotImplementedError(axis)
-            ret = np.mean(target)
-            return ret
-
-
-@six.add_metaclass(ABCMeta)
 class AbstractUnstructuredDriver(AbstractOcgisObject):
     @staticmethod
     def get_element_dimension(gc):

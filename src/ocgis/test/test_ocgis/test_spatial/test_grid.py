@@ -142,6 +142,10 @@ class TestGrid(AbstractTestInterface):
         with self.assertRaises(ValueError):
             _ = Grid()
 
+        # Test grids are always isomorphic.
+        grid = self.get_gridxy()
+        self.assertTrue(grid.is_isomorphic)
+
         # Test a field is always the parent of a grid.
         grid = self.get_gridxy()
         self.assertIsInstance(grid.parent, Field)

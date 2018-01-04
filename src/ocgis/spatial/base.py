@@ -298,6 +298,7 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         z = kwargs.pop(KeywordArgument.Z, None)
         mask = kwargs.pop(KeywordArgument.MASK, None)
         pos = kwargs.pop(KeywordArgument.POS, (0, 1))
+        is_isomorphic = kwargs.pop('is_isomorphic', None)
 
         parent = kwargs.get(KeywordArgument.PARENT, None)
 
@@ -340,6 +341,9 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
             self.parent.add_variable(mask, force=True)
             self.dimension_map.set_spatial_mask(mask)
 
+        # XYZ containers are not considered isomorphic (repeated topology or shapes) by default.
+        self.is_isomorphic = is_isomorphic
+
     @property
     def archetype(self):
         """
@@ -374,6 +378,11 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         :rtype: bool
         """
         return self.z is not None
+
+    @property
+    def is_isomorphic(self):
+        #tdk: doc
+        return self.dimension_map.get_property(DMK.IS_ISOMORPHIC)
 
     @property
     def mask_variable(self):

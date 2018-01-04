@@ -14,7 +14,7 @@ from ocgis import env
 from ocgis.base import orphaned, raise_if_empty
 from ocgis.collection.field import Field
 from ocgis.constants import MPIWriteMode, DimensionMapKey, KeywordArgument, DriverKey, CFName, SourceIndexType
-from ocgis.driver.base import AbstractDriver, driver_scope, AbstractIsotropicDriver
+from ocgis.driver.base import AbstractDriver, driver_scope
 from ocgis.exc import ProjectionDoesNotMatch, PayloadProtectedError, OcgWarning, NoDataVariablesFound, \
     GridDeficientError
 from ocgis.util.helpers import itersubclasses, get_iter, get_formatted_slice, get_by_key_list, is_auto_dtype, get_group
@@ -331,13 +331,33 @@ class AbstractDriverNetcdfCF(DriverNetcdf):
             dimension_map.set_variable(k, variable_name, **v)
 
 
-class DriverNetcdfCF(AbstractIsotropicDriver, AbstractDriverNetcdfCF):
+class DriverNetcdfCF(AbstractDriverNetcdfCF):
     """
     Metadata-aware netCDF driver interpreting CF-Grid by default.
     """
     key = DriverKey.NETCDF_CF
     _default_crs = env.DEFAULT_COORDSYS
     _priority = True
+
+    @staticmethod
+    def array_resolution(value, axis):
+        # tdk: doc
+        if value.size == 1:
+            return 0.0
+        else:
+            resolution_limit = constants.RESOLUTION_LIMIT
+            is_vectorized = value.ndim == 1
+            if is_vectorized:
+                target = np.abs(np.diff(np.abs(value[0:resolution_limit])))
+            else:
+                if axis == 0:
+                    target = np.abs(np.diff(np.abs(value[:, 0:resolution_limit]), axis=axis))
+                elif axis == 1:
+                    target = np.abs(np.diff(np.abs(value[0:resolution_limit, :]), axis=axis))
+                else:
+                    raise NotImplementedError(axis)
+            ret = np.mean(target)
+            return ret
 
     def create_dimension_map(self, group_metadata, strict=False):
         dmap = super(DriverNetcdfCF, self).create_dimension_map(group_metadata, strict=strict)
