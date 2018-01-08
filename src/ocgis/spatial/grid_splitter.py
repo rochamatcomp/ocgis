@@ -84,6 +84,7 @@ class GridSplitter(AbstractOcgisObject):
 
         self._src_grid = None
         self._dst_grid = None
+        self._buffer_value = None
 
         self.source = source
         self.destination = destination
@@ -131,6 +132,39 @@ class GridSplitter(AbstractOcgisObject):
         if 'wd' not in paths:
             paths['wd'] = os.getcwd()
         self.paths = paths
+
+    @property
+    def buffer_value(self):
+        #tdk: DOC
+        if self._buffer_value is None:
+            try:
+                if self.dst_grid_resolution is None:
+                    dst_grid_resolution = self.dst_grid.resolution_max
+                else:
+                    dst_grid_resolution = self.dst_grid_resolution_max
+                if self.src_grid_resolution is None:
+                    src_grid_resolution = self.src_grid.resolution_max
+                else:
+                    src_grid_resolution = self.src_grid_resolution_max
+
+                if dst_grid_resolution <= src_grid_resolution:
+                    target_resolution = dst_grid_resolution
+                else:
+                    target_resolution = src_grid_resolution
+                ret = 2. * target_resolution
+            except NotImplementedError:
+                # Unstructured grids do not have an associated resolution unless they are isomorphic.
+                if isinstance(self.src_grid, GridUnstruct) or isinstance(self.dst_grid, GridUnstruct):
+                    ret = None
+                else:
+                    raise
+        else:
+            ret = self._buffer_value
+        return ret
+
+    @buffer_value.setter
+    def buffer_value(self, value):
+        self._buffer_value = value
 
     @property
     def dst_grid(self):
@@ -316,30 +350,7 @@ class GridSplitter(AbstractOcgisObject):
         else:
             yield_slice = False
 
-        if self.buffer_value is None:
-            try:
-                if self.dst_grid_resolution is None:
-                    dst_grid_resolution = self.dst_grid.resolution
-                else:
-                    dst_grid_resolution = self.dst_grid_resolution
-                if self.src_grid_resolution is None:
-                    src_grid_resolution = self.src_grid.resolution
-                else:
-                    src_grid_resolution = self.src_grid_resolution
-
-                if dst_grid_resolution <= src_grid_resolution:
-                    target_resolution = dst_grid_resolution
-                else:
-                    target_resolution = src_grid_resolution
-                buffer_value = 2. * target_resolution
-            except NotImplementedError:
-                # Unstructured grids do not have an associated resolution.
-                if isinstance(self.src_grid, GridUnstruct) or isinstance(self.dst_grid, GridUnstruct):
-                    buffer_value = None
-                else:
-                    raise
-        else:
-            buffer_value = self.buffer_value
+        buffer_value = self.buffer_value
 
         dst_grid_wrapped_state = self.dst_grid.wrapped_state
         dst_grid_crs = self.dst_grid.crs

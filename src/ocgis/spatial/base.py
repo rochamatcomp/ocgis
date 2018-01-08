@@ -424,6 +424,11 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         return ret
 
     @property
+    def resolution_max(self):
+        #tdk: DOC
+        return max([self.resolution_x, self.resolution_y])
+
+    @property
     def resolution_x(self):
         # tdk: DOC
         return self.driver.array_resolution(self.x.get_value(), 1)
