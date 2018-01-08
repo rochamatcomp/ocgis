@@ -12,6 +12,7 @@ from ocgis.driver.nc_ugrid import DriverNetcdfUGRID
 from ocgis.spatial.grid import GridUnstruct, Grid
 from ocgis.spatial.grid_splitter import GridSplitter, does_contain
 from ocgis.test.base import attr, AbstractTestInterface, create_gridxy_global
+from ocgis.test.test_ocgis.test_driver.test_nc_scrip import FixtureDriverScripNetcdf
 from ocgis.variable.base import Variable
 from ocgis.variable.crs import Spherical
 from ocgis.variable.dimension import Dimension
@@ -19,7 +20,7 @@ from ocgis.variable.temporal import TemporalVariable
 from ocgis.vmachine.mpi import MPI_COMM, MPI_RANK
 
 
-class TestGridSplitter(AbstractTestInterface):
+class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
 
     @property
     def fixture_paths(self):
@@ -209,6 +210,26 @@ class TestGridSplitter(AbstractTestInterface):
             t.assert_called_once_with()
         for t in [gs.src_grid, gs.dst_grid]:
             self.assertEqual(t, mGrid)
+
+    def test_system_scrip_destination_splitting(self):
+        """Test splitting a SCRIP destination grid."""
+
+        src_grid = create_gridxy_global()
+        dst_grid = self.fixture_driver_scrip_netcdf_field().grid
+        gs = GridSplitter(src_grid, dst_grid, (3,), paths={'wd': self.current_dir_output})
+        gs.write_subsets()
+        self.assertEqual(len(os.listdir(self.current_dir_output)), 7)
+
+        # tdk: LAST: remove
+        # # for slc in gs.iter_dst_grid_slices():
+        # #     print(slc)
+        # for sub in gs.iter_dst_grid_subsets(yield_slice=False):
+        #     print sub.extent
+        #     print sub.y.get_value()
+        #     print sub.x.get_value()
+        #     print '------------'
+        #     # print(sub[0].extent)
+        # tkk
 
     def test_system_splitting_unstructured(self):
         # tdk: LAST: fails with mpi4py import when it is not installed. should pass in serial.

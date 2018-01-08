@@ -285,19 +285,6 @@ class GridSplitter(AbstractOcgisObject):
 
         return self.dst_grid._gs_iter_dst_grid_slices_(self)
 
-        # slice_store = []
-        # ydim_name = self.dst_grid.dimensions[0].name
-        # xdim_name = self.dst_grid.dimensions[1].name
-        # dst_grid_shape_global = self.dst_grid.shape_global
-        # for idx in range(self.dst_grid.ndim):
-        #     splits = self.nsplits_dst[idx]
-        #     size = dst_grid_shape_global[idx]
-        #     slices = create_slices_for_dimension(size, splits)
-        #     slice_store.append(slices)
-        # for slice_y, slice_x in itertools.product(*slice_store):
-        #     yield {ydim_name: create_slice_from_tuple(slice_y),
-        #            xdim_name: create_slice_from_tuple(slice_x)}
-
     def iter_dst_grid_subsets(self, yield_slice=False):
         """
         Using slices from ``iter_dst_grid_slices``, yield destination grid subsets.

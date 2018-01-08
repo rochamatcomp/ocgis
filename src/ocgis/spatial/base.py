@@ -349,6 +349,10 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         if is_isomorphic != constants.UNINITIALIZED:
             self.is_isomorphic = is_isomorphic
 
+    def _gs_iter_dst_grid_slices_(self, grid_splitter):
+        #tdk: ORDER
+        return self.driver._gs_iter_dst_grid_slices_(grid_splitter)
+
     @property
     def archetype(self):
         """

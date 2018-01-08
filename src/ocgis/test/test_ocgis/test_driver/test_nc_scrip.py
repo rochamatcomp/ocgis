@@ -1,19 +1,55 @@
 import numpy as np
 from mock import mock
 
-from ocgis import RequestDataset, DimensionMap, Grid, GridUnstruct, PointGC, Field, Variable
+from ocgis import RequestDataset, DimensionMap, Grid, GridUnstruct, PointGC, Field, Variable, Dimension
 from ocgis.constants import DriverKey, DMK, Topology
 from ocgis.driver.nc_scrip import DriverScripNetcdf
-from ocgis.test.base import TestBase
+from ocgis.test.base import TestBase, create_gridxy_global
 from ocgis.variable.crs import Spherical
 
+import itertools
 
-class TestDriverScripNetcdf(TestBase):
+
+class FixtureDriverScripNetcdf(object):
+
+    def fixture_driver_scrip_netcdf_field(self):
+        xvalue = np.arange(10., 35., step=5)
+        yvalue = np.arange(45., 85., step=10)
+        grid_size = xvalue.shape[0] * yvalue.shape[0]
+
+        dim_grid_size = Dimension(name='grid_size', size=grid_size)
+        x = Variable(name='grid_center_lon', dimensions=dim_grid_size)
+        y = Variable(name='grid_center_lat', dimensions=dim_grid_size)
+
+        for idx, (xv, yv) in enumerate(itertools.product(xvalue, yvalue)):
+            x.get_value()[idx] = xv
+            y.get_value()[idx] = yv
+
+        gc = PointGC(x=x, y=y, crs=Spherical(), driver=DriverScripNetcdf)
+        grid = GridUnstruct(geoms=[gc])
+        ret = Field(grid=grid, driver=DriverScripNetcdf)
+
+        grid_dims = Variable(name='grid_dims', value=[yvalue.shape[0], xvalue.shape[0]], dimensions='grid_rank')
+        ret.add_variable(grid_dims)
+
+        return ret
+
+
+class TestDriverScripNetcdf(TestBase, FixtureDriverScripNetcdf):
 
     def test_init(self):
         rd = mock.create_autospec(RequestDataset)
         d = DriverScripNetcdf(rd)
         self.assertIsInstance(d, DriverScripNetcdf)
+
+        field = self.fixture_driver_scrip_netcdf_field()
+        self.assertIsInstance(field, Field)
+
+        #tdk: REMOVE
+        slc = np.array([1, 3])
+        sub = field.grid.get_distributed_slice(slc)
+        pass
+        #tdk: /REMOVE
 
     def test_system_spatial_resolution(self):
         """Test spatial resolution is computed appropriately."""
