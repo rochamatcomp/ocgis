@@ -283,18 +283,20 @@ class GridSplitter(AbstractOcgisObject):
         >>> example_yield = {'dimx': slice(2, 4), 'dimy': slice(10, 20)}
         """
 
-        slice_store = []
-        ydim_name = self.dst_grid.dimensions[0].name
-        xdim_name = self.dst_grid.dimensions[1].name
-        dst_grid_shape_global = self.dst_grid.shape_global
-        for idx in range(self.dst_grid.ndim):
-            splits = self.nsplits_dst[idx]
-            size = dst_grid_shape_global[idx]
-            slices = create_slices_for_dimension(size, splits)
-            slice_store.append(slices)
-        for slice_y, slice_x in itertools.product(*slice_store):
-            yield {ydim_name: create_slice_from_tuple(slice_y),
-                   xdim_name: create_slice_from_tuple(slice_x)}
+        return self.dst_grid._gs_iter_dst_grid_slices_(self)
+
+        # slice_store = []
+        # ydim_name = self.dst_grid.dimensions[0].name
+        # xdim_name = self.dst_grid.dimensions[1].name
+        # dst_grid_shape_global = self.dst_grid.shape_global
+        # for idx in range(self.dst_grid.ndim):
+        #     splits = self.nsplits_dst[idx]
+        #     size = dst_grid_shape_global[idx]
+        #     slices = create_slices_for_dimension(size, splits)
+        #     slice_store.append(slices)
+        # for slice_y, slice_x in itertools.product(*slice_store):
+        #     yield {ydim_name: create_slice_from_tuple(slice_y),
+        #            xdim_name: create_slice_from_tuple(slice_x)}
 
     def iter_dst_grid_subsets(self, yield_slice=False):
         """
@@ -586,22 +588,6 @@ class GridSplitter(AbstractOcgisObject):
             odata = oindices[odata - 1]
 
         return odata
-
-
-def create_slice_from_tuple(tup):
-    return slice(tup[0], tup[1])
-
-
-def create_slices_for_dimension(size, splits):
-    ompi = OcgDist(size=splits)
-    dimname = 'foo'
-    ompi.create_dimension(dimname, size, dist=True)
-    ompi.update_dimension_bounds()
-    slices = []
-    for rank in range(splits):
-        dimension = ompi.get_dimension(dimname, rank=rank)
-        slices.append(dimension.bounds_local)
-    return slices
 
 
 def does_contain(container, containee):

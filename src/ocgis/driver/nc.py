@@ -24,6 +24,9 @@ from ocgis.variable.crs import CFCoordinateReferenceSystem, CoordinateReferenceS
     AbstractProj4CRS
 from ocgis.variable.dimension import Dimension
 from ocgis.variable.temporal import TemporalVariable
+import itertools
+
+from ocgis.vmachine.mpi import OcgDist
 
 
 class DriverNetcdf(AbstractDriver):
@@ -340,6 +343,23 @@ class DriverNetcdfCF(AbstractDriverNetcdfCF):
     _priority = True
 
     @staticmethod
+    def _gs_iter_dst_grid_slices_(grid_splitter):
+        #tdk: ORDER
+        #tdk: DOC: superclass methods
+        slice_store = []
+        ydim_name = grid_splitter.dst_grid.dimensions[0].name
+        xdim_name = grid_splitter.dst_grid.dimensions[1].name
+        dst_grid_shape_global = grid_splitter.dst_grid.shape_global
+        for idx in range(grid_splitter.dst_grid.ndim):
+            splits = grid_splitter.nsplits_dst[idx]
+            size = dst_grid_shape_global[idx]
+            slices = create_slices_for_dimension(size, splits)
+            slice_store.append(slices)
+        for slice_y, slice_x in itertools.product(*slice_store):
+            yield {ydim_name: create_slice_from_tuple(slice_y),
+                   xdim_name: create_slice_from_tuple(slice_x)}
+
+    @staticmethod
     def array_resolution(value, axis):
         # tdk: doc
         if value.size == 1:
@@ -471,6 +491,22 @@ class DriverNetcdfCF(AbstractDriverNetcdfCF):
             field.set_crs(env.COORDSYS_ACTUAL, should_add=True)
 
         return field
+
+
+def create_slice_from_tuple(tup):
+    return slice(tup[0], tup[1])
+
+
+def create_slices_for_dimension(size, splits):
+    ompi = OcgDist(size=splits)
+    dimname = 'foo'
+    ompi.create_dimension(dimname, size, dist=True)
+    ompi.update_dimension_bounds()
+    slices = []
+    for rank in range(splits):
+        dimension = ompi.get_dimension(dimname, rank=rank)
+        slices.append(dimension.bounds_local)
+    return slices
 
 
 def parse_metadata(rootgrp, fill=None):

@@ -5,7 +5,7 @@ import numpy as np
 from mock import mock, PropertyMock
 from shapely.geometry import box
 
-from ocgis import RequestDataset, Field
+from ocgis import RequestDataset, Field, vm
 from ocgis.base import get_variable_names
 from ocgis.constants import MPIWriteMode, GridSplitterConstants, VariableName, WrappedState
 from ocgis.driver.nc_ugrid import DriverNetcdfUGRID
@@ -107,7 +107,7 @@ class TestGridSplitter(AbstractTestInterface):
 
         desired_dst_grid_sum = gs.dst_grid.parent['data'].get_value().sum()
         desired_dst_grid_sum = MPI_COMM.gather(desired_dst_grid_sum)
-        if MPI_RANK == 0:
+        if vm.rank == 0:
             desired_sum = np.sum(desired_dst_grid_sum)
 
         desired = [{'y': slice(0, 180, None), 'x': slice(0, 240, None)},
@@ -121,7 +121,7 @@ class TestGridSplitter(AbstractTestInterface):
 
         gs.write_subsets()
 
-        if MPI_RANK == 0:
+        if vm.rank == 0:
             rank_sums = []
 
         for ctr in range(1, gs.nsplits_dst[0] * gs.nsplits_dst[1] + 1):
@@ -147,12 +147,12 @@ class TestGridSplitter(AbstractTestInterface):
                 actual_data_sum = np.sum(actual_data_sum)
                 rank_sums.append(actual_data_sum)
 
-        if MPI_RANK == 0:
+        if vm.rank == 0:
             self.assertAlmostEqual(desired_sum, np.sum(rank_sums))
             index_path = gs.create_full_path_from_template('index_file')
             self.assertTrue(os.path.exists(index_path))
 
-        MPI_COMM.Barrier()
+        vm.barrier()
 
         index_path = gs.create_full_path_from_template('index_file')
         index_field = RequestDataset(index_path).get()
@@ -211,6 +211,7 @@ class TestGridSplitter(AbstractTestInterface):
             self.assertEqual(t, mGrid)
 
     def test_system_splitting_unstructured(self):
+        # tdk: LAST: fails with mpi4py import when it is not installed. should pass in serial.
         ufile = self.get_temporary_file_path('ugrid.nc')
         resolution = 10.
         self.fixture_regular_ugrid_file(ufile, resolution)

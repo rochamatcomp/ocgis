@@ -117,6 +117,10 @@ class AbstractGrid(AbstractOcgisObject):
             raise ValueError("'abstraction' may not be None.")
         self.abstraction = abstraction
 
+    def _gs_iter_dst_grid_slices_(self, grid_splitter):
+        #tdk: ORDER
+        return self.driver._gs_iter_dst_grid_slices_(grid_splitter)
+
     @property
     def abstraction(self):
         """
