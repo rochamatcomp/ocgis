@@ -24,10 +24,6 @@ class TestDriverScripNetcdf(TestBase):
         self.assertEqual(field.driver.key, DriverKey.NETCDF_SCRIP)
         self.assertEqual(field.grid.driver.key, DriverKey.NETCDF_SCRIP)
 
-        print field.grid.x.get_value()
-        print np.linspace(0, 358.75, num=55296)
-        print np.linspace()
-
         self.assertEqual(field.grid.resolution_x, 1.25)
         self.assertAlmostEqual(field.grid.resolution_y, 0.94240837696335089)
 
