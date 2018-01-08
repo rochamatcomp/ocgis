@@ -134,10 +134,9 @@ def tester():
 
 
 def create_request_dataset(path, esmf_type):
-    # tdk: need scrip driver
     edmap = {'GRIDSPEC': DriverKey.NETCDF_CF,
              'UGRID': DriverKey.NETCDF_UGRID,
-             'SCRIP': 'tkk'}
+             'SCRIP': DriverKey.NETCDF_SCRIP}
     odriver = edmap[esmf_type]
     return RequestDataset(uri=path, driver=odriver)
 
