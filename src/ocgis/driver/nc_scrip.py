@@ -27,7 +27,7 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
             return ret
 
     def create_dimension_map(self, group_metadata, **kwargs):
-        #tdk: need to account for bounds
+        #tdk: RESUME: need to account for bounds
         ret = DimensionMap()
         ret.set_driver(self)
 
@@ -39,6 +39,9 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
         ret.set_property(DMK.IS_ISOMORPHIC, True)
 
         return ret
+
+    def get_distributed_dimension_name(self, dimension_map, dimensions_metadata):
+        return 'grid_size'
 
     @classmethod
     def _get_field_write_target_(cls, field):

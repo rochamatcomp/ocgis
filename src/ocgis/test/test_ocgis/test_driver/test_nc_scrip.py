@@ -60,6 +60,8 @@ class TestDriverScripNetcdf(TestBase, FixtureDriverScripNetcdf):
         self.assertEqual(field.driver.key, DriverKey.NETCDF_SCRIP)
         self.assertEqual(field.grid.driver.key, DriverKey.NETCDF_SCRIP)
 
+        self.barrier_print(field.shapes)
+
         self.assertEqual(field.grid.resolution_x, 1.25)
         self.assertAlmostEqual(field.grid.resolution_y, 0.94240837696335089)
 
