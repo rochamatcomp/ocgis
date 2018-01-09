@@ -5,9 +5,52 @@ from datetime import datetime
 
 import numpy as np
 
+from ocgis import Dimension, Variable
 from ocgis.calc import base
-from ocgis.calc.base import AbstractUnivariateFunction, AbstractParameterizedFunction
+from ocgis.calc.base import AbstractUnivariateFunction, AbstractParameterizedFunction, AbstractFieldFunction
+from ocgis.constants import DMK
 from ocgis.exc import DefinitionValidationError
+
+
+class DescriptiveStatistics(AbstractFieldFunction):
+    key = 'desc_stats'
+    description = 'some basic descriptive stats'
+    long_name = 'descriptive statistics'
+    standard_name = '?'
+
+    def calculate(self):
+        field = self.field
+        dimension_map = field.dimension_map
+
+        # This is the variable containing data to summarize.
+        data = field['to_describe']
+
+        # These are the statistics to run on the entire time series.
+        stats = {'mean': np.ma.mean, 'std': np.ma.std}
+
+        # Dimension for the statistics. One entry for each unique statistic.
+        statdim = Dimension(name='parameter', size=len(stats))
+
+        # Properly getting the time and space dimensions so we don't have to assume names.
+        timedim = dimension_map.get_dimension(DMK.TIME, dimensions=field.dimensions)
+        latdim = dimension_map.get_dimension(DMK.Y, dimensions=field.dimensions)
+        londim = dimension_map.get_dimension(DMK.X, dimensions=field.dimensions)
+
+        # Time axis to summarize across.
+        axis = data.dimension_names.index(timedim.name)
+
+        # Variable to hold the statistical summaries.
+        fillvar = Variable(name=self.alias, dtype=self.dtype, dimensions=(statdim, latdim, londim))
+
+        # Variable to hold statistical names.
+        parms = Variable(name='statnames', dtype=object, dimensions=statdim)
+        for idx, (statname, statfunc) in enumerate(stats.items()):
+            fillvar.get_value()[idx, ...] = statfunc(data.get_value(), axis=axis)
+            parms.get_value()[idx] = statname
+
+        # Add the calculated data to the output variable collection.
+        self.vc.add_variable(fillvar)
+        self.vc.add_variable(parms)
 
 
 class MovingWindow(AbstractUnivariateFunction, AbstractParameterizedFunction):

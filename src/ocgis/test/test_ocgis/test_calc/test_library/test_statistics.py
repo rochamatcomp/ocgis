@@ -1,17 +1,30 @@
 import numpy as np
 
 import ocgis
-from ocgis.calc.library.statistics import Mean, FrequencyPercentile, MovingWindow, DailyPercentile
+from ocgis import VariableCollection
+from ocgis.calc.library.statistics import Mean, FrequencyPercentile, MovingWindow, DailyPercentile, \
+    DescriptiveStatistics
 from ocgis.collection.field import Field
 from ocgis.constants import OutputFormatName
 from ocgis.exc import DefinitionValidationError
 from ocgis.ops.parms.definition import Calc
-from ocgis.test.base import attr, AbstractTestField
+from ocgis.test.base import attr, AbstractTestField, TestBase, create_gridxy_global, create_exact_field
 from ocgis.test.base import nc_scope
 from ocgis.util.itester import itr_products_keywords
 from ocgis.util.large_array import compute
 from ocgis.util.units import get_units_object
 from ocgis.variable.base import Variable
+from ocgis.variable.crs import Spherical
+
+
+class TestDescriptiveStatistics(TestBase):
+
+    def test(self):
+        grid = create_gridxy_global(resolution=5., crs=Spherical())
+        field = create_exact_field(grid, 'to_describe', ntime=365*2)
+        ds = DescriptiveStatistics(field=field, alias='stats')
+        vc = ds.execute()
+        self.assertIsInstance(vc, VariableCollection)
 
 
 class TestDailyPercentile(AbstractTestField):
