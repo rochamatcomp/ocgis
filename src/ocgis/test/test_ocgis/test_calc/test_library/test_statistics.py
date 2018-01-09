@@ -1,7 +1,6 @@
 import numpy as np
 
 import ocgis
-from ocgis import VariableCollection
 from ocgis.calc.library.statistics import Mean, FrequencyPercentile, MovingWindow, DailyPercentile, \
     DescriptiveStatistics
 from ocgis.collection.field import Field
@@ -22,9 +21,22 @@ class TestDescriptiveStatistics(TestBase):
     def test(self):
         grid = create_gridxy_global(resolution=5., crs=Spherical())
         field = create_exact_field(grid, 'to_describe', ntime=365*2)
-        ds = DescriptiveStatistics(field=field, alias='stats')
-        vc = ds.execute()
-        self.assertIsInstance(vc, VariableCollection)
+
+        # Data variables are a standard tag in OCGIS. The "create_exact_field" tags the data variable automatically.
+        self.assertEqual(field.data_variables[0].name, 'to_describe')
+
+        # Prep the field to accept the calculation. The time is no longer relevant and needs to be removed. So does the
+        # original data variable.
+        outfield = field.copy()
+        outfield.remove_variable('to_describe')
+        outfield.set_time(None)
+
+        # This keyword argument was originally designed for variable collections, but a field can be used.
+        # The parameter name should be changed.
+        ds = DescriptiveStatistics(field=field, alias='stats', vc=outfield)
+        calc_field = ds.execute()
+        self.assertIsInstance(calc_field, Field)
+        self.assertNotEqual(set(field.keys()), set(calc_field.keys()))
 
 
 class TestDailyPercentile(AbstractTestField):

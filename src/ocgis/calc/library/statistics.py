@@ -23,7 +23,7 @@ class DescriptiveStatistics(AbstractFieldFunction):
         dimension_map = field.dimension_map
 
         # This is the variable containing data to summarize.
-        data = field['to_describe']
+        data = field.data_variables[0]
 
         # These are the statistics to run on the entire time series.
         stats = {'mean': np.ma.mean, 'std': np.ma.std}
@@ -49,7 +49,7 @@ class DescriptiveStatistics(AbstractFieldFunction):
             parms.get_value()[idx] = statname
 
         # Add the calculated data to the output variable collection.
-        self.vc.add_variable(fillvar)
+        self.vc.add_variable(fillvar, is_data=True)
         self.vc.add_variable(parms)
 
 
