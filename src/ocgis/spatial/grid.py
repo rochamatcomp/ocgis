@@ -9,7 +9,6 @@ from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
 
 import ocgis
 from ocgis import Variable, vm
-from ocgis import constants
 from ocgis.base import get_dimension_names, raise_if_empty, AbstractOcgisObject, get_variable_names, \
     is_unstructured_driver
 from ocgis.constants import WrappedState, VariableName, KeywordArgument, GridAbstraction, DriverKey, \
@@ -228,6 +227,7 @@ class Grid(AbstractGrid, AbstractXYZSpatialContainer):
         abstraction = kwargs.pop(KeywordArgument.ABSTRACTION, KeywordArgument.Defaults.ABSTRACTION)
 
         # Structured grids are always considered isomorphic.
+        # tdk: TEST: that is_isomorphic=False will raise an exception on resolutions
         kwargs[DMK.IS_ISOMORPHIC] = True
 
         AbstractXYZSpatialContainer.__init__(self, **kwargs)

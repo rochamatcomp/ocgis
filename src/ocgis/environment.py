@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 import sys
@@ -145,6 +146,31 @@ class Environment(AbstractOcgisObject):
             attr.value = value
             if attr.on_change is not None:
                 attr.on_change()
+
+    def configure_logging(self):
+        from ocgis.util.logging_ocgis import ocgis_lh
+
+        # If file logging is enabled, check where or if the log should be written.
+        if self.ENABLE_FILE_LOGGING:
+            raise NotImplementedError
+        else:
+            to_file = None
+
+        # Flags to determine streaming to console.
+        if env.VERBOSE:
+            to_stream = True
+        else:
+            to_stream = False
+
+        # Configure the logger.
+        if self.DEBUG:
+            level = logging.DEBUG
+        else:
+            level = logging.INFO
+        # This wraps the callback function with methods to capture the completion of major operations.
+        ocgis_lh.configure(to_file=to_file, to_stream=to_stream, level=level,
+                           # callback=progress, callback_level=level,
+                           )
 
     def get_geomcabinet_path(self):
         return self.DIR_GEOMCABINET or self.DIR_SHPCABINET

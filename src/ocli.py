@@ -1,15 +1,12 @@
 #!/usr/bin/env python
-import shutil
-import tempfile
-
-import click
-
-
 # tdk: DOC: add src_type and dst_type to RWG ESMF documentation
 # tdk: ENH: added defaults for nchunks_dst
 # tdk: LAST: harmonize GridSplitter param names with final interface names
 import os
+import shutil
+import tempfile
 
+import click
 from shapely.geometry import box
 
 import ocgis
@@ -53,6 +50,8 @@ def ocli():
               help='Subset the destination grid by the bounding box spatial extent of the source grid.')
 def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, src_resolution, dst_resolution,
                buffer_distance, wd, persist, merge, spatial_subset):
+    ocgis.env.configure_logging()
+
     if not spatial_subset:
         if nchunks_dst is None:
             raise ValueError("'nchunks_dst' may not be None if --no_spatial_subset")
@@ -106,7 +105,7 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
             paths['wgt_template'] = weight
 
         gs = GridSplitter(rd_src, rd_dst, nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
-                          dst_grid_resolution=dst_resolution, buffer_value=buffer_distance)
+                          dst_grid_resolution=dst_resolution, buffer_value=buffer_distance, redistribute=True)
 
     # Create the global weight file.
     if merge:

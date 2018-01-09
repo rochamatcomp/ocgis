@@ -1,4 +1,3 @@
-import itertools
 import logging
 import os
 
@@ -16,7 +15,7 @@ from ocgis.spatial.grid import GridUnstruct, AbstractGrid
 from ocgis.util.logging_ocgis import ocgis_lh
 from ocgis.variable.base import VariableCollection
 from ocgis.variable.geom import GeometryVariable
-from ocgis.vmachine.mpi import OcgDist, redistribute_by_src_idx
+from ocgis.vmachine.mpi import redistribute_by_src_idx
 
 
 class GridSplitter(AbstractOcgisObject):
@@ -85,6 +84,7 @@ class GridSplitter(AbstractOcgisObject):
         self._src_grid = None
         self._dst_grid = None
         self._buffer_value = None
+        self._optimized_bbox_subset = None
 
         self.source = source
         self.destination = destination
@@ -100,23 +100,25 @@ class GridSplitter(AbstractOcgisObject):
         self.dst_grid_resolution = dst_grid_resolution
         self.iter_dst = iter_dst
         self.buffer_value = buffer_value
+        self.optimized_bbox_subset = optimized_bbox_subset
         self.redistribute = redistribute
 
         # Call each grid's grid splitter initialize routine.
         self.src_grid._gs_initialize_(RegriddingRole.SOURCE)
         self.dst_grid._gs_initialize_(RegriddingRole.DESTINATION)
 
+        #tdk: REMOVE
         # Check optimizations.
-        assert optimized_bbox_subset is not None
-        if optimized_bbox_subset == 'auto':
-            # It is okay to use optimization if resolution are provided for unstructured grids. This implies some
-            # regular structure for the elements.
-            if (is_unstructured(self.src_grid) and src_grid_resolution is None) or \
-                    (is_unstructured(self.dst_grid) and dst_grid_resolution is None):
-                optimized_bbox_subset = False
-            else:
-                optimized_bbox_subset = True
-        self.optimized_bbox_subset = optimized_bbox_subset
+        # assert optimized_bbox_subset is not None
+        # if optimized_bbox_subset == 'auto':
+        #     # It is okay to use optimization if resolution are provided for unstructured grids. This implies some
+        #     # regular structure for the elements.
+        #     if (not self.src_grid.is_isomorphic and src_grid_resolution is None) or \
+        #        (not self.dst_grid.is_isomorphic and dst_grid_resolution is None):
+        #         optimized_bbox_subset = False
+        #     else:
+        #         optimized_bbox_subset = True
+        # self.optimized_bbox_subset = optimized_bbox_subset
 
         # Construct default paths if None are provided.
         defaults = {'dst_template': 'split_dst_{}.nc',
@@ -132,6 +134,28 @@ class GridSplitter(AbstractOcgisObject):
         if 'wd' not in paths:
             paths['wd'] = os.getcwd()
         self.paths = paths
+
+    @property
+    def optimized_bbox_subset(self):
+        #tdk: ORDER
+        #tdk: DOC
+        if self._optimized_bbox_subset == 'auto':
+            # tdk: FEATURE: this should use is_isomorphic as opposed to resolution to avoid loading the coordinate data to determine resolution.
+            # tdk: FEATURE:  requires adding grid_is_isomorphic argument to request dataset to pass to dimension map creation.
+            # if self.src_grid.is_isomorphic and self.dst_grid.is_isomorphic:
+            if self.src_grid.resolution_max is not None and self.dst_grid.resolution_max is not None:
+                ret = True
+            else:
+                ret = False
+        else:
+            ret = self._optimized_bbox_subset
+        return ret
+
+    @optimized_bbox_subset.setter
+    def optimized_bbox_subset(self, value):
+        #tdk: ORDER
+        assert value is not None
+        self._optimized_bbox_subset = value
 
     @property
     def buffer_value(self):
@@ -362,6 +386,7 @@ class GridSplitter(AbstractOcgisObject):
             iter_dst = self.iter_dst_grid_subsets(yield_slice=yield_slice)
 
         # Loop over each destination grid subset.
+        ocgis_lh(logger='grid_splitter', msg='starting "for yld in iter_dst"', level=logging.DEBUG)
         for yld in iter_dst:
             if yield_slice:
                 dst_grid_subset, dst_slice = yld
@@ -394,14 +419,19 @@ class GridSplitter(AbstractOcgisObject):
 
             sub_box = GeometryVariable.from_shapely(sub_box, is_bbox=True, wrapped_state=dst_grid_wrapped_state,
                                                     crs=dst_grid_crs)
+            ocgis_lh(logger='grid_splitter', msg='starting "self.src_grid.get_intersects"', level=logging.DEBUG)
             src_grid_subset, src_grid_slice = self.src_grid.get_intersects(sub_box, keep_touches=False, cascade=False,
                                                                            optimized_bbox_subset=self.optimized_bbox_subset,
                                                                            return_slice=True)
+            ocgis_lh(logger='grid_splitter', msg='finished "self.src_grid.get_intersects"', level=logging.DEBUG)
+            # tdk: RESUME: why is this subset not working??
+            # tdk: need to use scrip bounds to get appropriate extent for the destination
 
             # Reload the data using a new source index distribution.
             if hasattr(src_grid_subset, 'reduce_global'):
                 # Only redistribute if we have one live rank.
                 if self.redistribute and len(vm.get_live_ranks_from_object(src_grid_subset)) > 0:
+                    ocgis_lh(logger='grid_splitter', msg='starting redistribute', level=logging.DEBUG)
                     topology = src_grid_subset.abstractions_available[Topology.POLYGON]
                     cindex = topology.cindex
                     redist_dimname = self.src_grid.abstractions_available[Topology.POLYGON].element_dim.name
@@ -410,9 +440,12 @@ class GridSplitter(AbstractOcgisObject):
                     else:
                         redist_dim = topology.element_dim
                     redistribute_by_src_idx(cindex, redist_dimname, redist_dim)
+                    ocgis_lh(logger='grid_splitter', msg='finished redistribute', level=logging.DEBUG)
 
             with vm.scoped_by_emptyable('src_grid_subset', src_grid_subset):
                 if not vm.is_null:
+                    import ipdb;
+                    ipdb.set_trace()
                     if not self.allow_masked:
                         gmask = src_grid_subset.get_mask()
                         if gmask is not None and gmask.any():
@@ -425,7 +458,9 @@ class GridSplitter(AbstractOcgisObject):
 
                     # Try to reduce the coordinates in the case of unstructured grid data.
                     if hasattr(src_grid_subset, 'reduce_global'):
+                        ocgis_lh(logger='grid_splitter', msg='starting reduce_global', level=logging.DEBUG)
                         src_grid_subset = src_grid_subset.reduce_global()
+                        ocgis_lh(logger='grid_splitter', msg='finished reduce_global', level=logging.DEBUG)
                 else:
                     src_grid_subset = VariableCollection(is_empty=True)
 
@@ -456,7 +491,9 @@ class GridSplitter(AbstractOcgisObject):
         # nzeros = len(str(reduce(lambda x, y: x * y, self.nsplits_dst)))
 
         ctr = 1
+        ocgis_lh(logger='grid_splitter', msg='starting self.iter_src_grid_subsets', level=logging.DEBUG)
         for sub_src, src_slc, sub_dst, dst_slc in self.iter_src_grid_subsets(yield_dst=True):
+            ocgis_lh(logger='grid_splitter', msg='finished iteration {} for self.iter_src_grid_subsets'.format(ctr), level=logging.DEBUG)
             # if vm.rank == 0:
             #     vm.rank_print('write_subset iterator count :: {}'.format(ctr))
             #     tstart = time.time()
@@ -481,10 +518,10 @@ class GridSplitter(AbstractOcgisObject):
             for target, path in zip(*zip_args):
                 with vm.scoped_by_emptyable('field.write', target):
                     if not vm.is_null:
-                        ocgis_lh(msg='writing: {}'.format(path), level=logging.DEBUG)
+                        ocgis_lh(logger='grid_splitter', msg='writing: {}'.format(path), level=logging.DEBUG)
                         field = Field(grid=target)
                         field.write(path)
-                        ocgis_lh(msg='finished writing: {}'.format(path), level=logging.DEBUG)
+                        ocgis_lh(logger='grid_splitter', msg='finished writing: {}'.format(path), level=logging.DEBUG)
 
             # Increment the counter outside of the loop to avoid counting empty subsets.
             ctr += 1
