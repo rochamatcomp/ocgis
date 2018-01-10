@@ -60,6 +60,31 @@ class Test(TestBase):
         import ipdb;
         ipdb.set_trace()
 
+    def test_tdk_subsets_okay(self):
+        # tdk: REMOVE
+        self.fail()
+        path = '/tmp/cesm-manip'
+        extents = Dict()
+        for fn in os.listdir(path):
+            fullfile = os.path.join(path, fn)
+            if 'src' in fullfile:
+                driver = 'netcdf-ugrid'
+            else:
+                driver = 'netcdf-scrip'
+            idx = int(fn[10:11])
+
+            print fullfile, driver, idx
+
+            field = RequestDataset(fullfile, driver=driver).create_field()
+            extent = field.grid.extent_global
+            # extents[idx][driver]['extent'] = extent
+            extents[idx][driver] = extent
+            # extents[idx][driver]['geom'] = box(*extent)
+
+        # for k, v in extent.items():
+
+        self.pprint_dict(extents)
+
     def test_init(self):
         runner = CliRunner()
         result = runner.invoke(ocli)

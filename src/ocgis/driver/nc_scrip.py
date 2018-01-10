@@ -5,7 +5,6 @@ from ocgis.constants import DriverKey, DMK, Topology
 from ocgis.driver.base import AbstractUnstructuredDriver
 from ocgis.driver.nc import DriverNetcdf
 from ocgis.util.helpers import create_unique_global_array
-from ocgis.util.logging_ocgis import ocgis_lh
 from ocgis.vmachine.mpi import hgather
 
 
@@ -73,7 +72,7 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
         # ucenter_lat = np.unique(center_lat)
         ucenter_lat = create_unique_global_array(center_lat)
 
-        ocgis_lh(msg=['ucenter_lat=', ucenter_lat], logger='tdk', level=10)
+        # ocgis_lh(msg=['ucenter_lat=', ucenter_lat], logger='tdk', level=10)
 
         ucenter_lat = vm.gather(ucenter_lat)
         if vm.rank == 0:
@@ -83,7 +82,7 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
         else:
             ucenter_splits = [None] * grid_splitter.nsplits_dst[0]
 
-        ocgis_lh(msg=['ucenter_splits=', ucenter_splits], logger='tdk', level=10)
+        # ocgis_lh(msg=['ucenter_splits=', ucenter_splits], logger='tdk', level=10)
 
         # for ctr, ucenter_split in enumerate(ucenter_splits, start=1):
         for ucenter_split in ucenter_splits:
