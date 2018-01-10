@@ -1,21 +1,19 @@
-import numpy as np
-
-from ocgis import env
+import os
 import subprocess
 from unittest import SkipTest
 
 import mock
-import os
+import numpy as np
+from click.testing import CliRunner
+from shapely.geometry import box
 
 import ocgis
-from ocgis import RequestDataset, GridSplitter, Variable, Grid
-from ocgis.constants import DriverKey
+from ocgis import RequestDataset, Variable, Grid
+from ocgis import env
 from ocgis.test.base import TestBase, attr, create_gridxy_global, create_exact_field
-from click.testing import CliRunner
-
 from ocgis.util.addict import Dict
 from ocgis.variable.crs import Spherical
-from ocli import ocli, cesm_manip
+from ocli import ocli
 
 
 #tdk: modify nose testing implementation to not load this file? how to deal with click?
@@ -47,6 +45,20 @@ class Test(TestBase):
         poss.merge = ['__exclude__', '__include__']
 
         return poss
+
+    def test_tdk_ugrid_subset(self):
+        # tdk: REMOVE: this is a development-only test
+        self.fail()
+        bbox = (-0.02836192562955318, -90.02836192562955, 358.7783619256295, 45.73516820835204)
+        bbox = box(*bbox)
+
+        path = '/home/benkoziol/l/data/bekozi-work/i49-ugrid-cesm/UGRID_1km-merge-10min_HYDRO1K-merge-nomask_c130402.nc'
+
+        infield = RequestDataset(path, driver='netcdf-ugrid', grid_abstraction='point').create_field()
+
+        sub = infield.grid.get_intersects(bbox, optimized_bbox_subset=True)
+        import ipdb;
+        ipdb.set_trace()
 
     def test_init(self):
         runner = CliRunner()

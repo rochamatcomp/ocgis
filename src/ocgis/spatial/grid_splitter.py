@@ -444,8 +444,6 @@ class GridSplitter(AbstractOcgisObject):
 
             with vm.scoped_by_emptyable('src_grid_subset', src_grid_subset):
                 if not vm.is_null:
-                    import ipdb;
-                    ipdb.set_trace()
                     if not self.allow_masked:
                         gmask = src_grid_subset.get_mask()
                         if gmask is not None and gmask.any():

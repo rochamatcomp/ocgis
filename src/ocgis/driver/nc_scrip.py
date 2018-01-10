@@ -1,10 +1,12 @@
-from ocgis import DimensionMap, env, constants
+import numpy as np
+
+from ocgis import DimensionMap, env, constants, vm
 from ocgis.constants import DriverKey, DMK, Topology
 from ocgis.driver.base import AbstractUnstructuredDriver
 from ocgis.driver.nc import DriverNetcdf
-from ocgis.exc import GridDeficientError
-from ocgis.variable.crs import Spherical
-import numpy as np
+from ocgis.util.helpers import create_unique_global_array
+from ocgis.util.logging_ocgis import ocgis_lh
+from ocgis.vmachine.mpi import hgather
 
 
 class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
@@ -58,6 +60,7 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
     @staticmethod
     def _gs_iter_dst_grid_slices_(grid_splitter):
         # tdk: CLEAN
+        # tdk: HACK: this method uses some global gathers which is not ideal
         # Destination splitting works off center coordinates only.
         pgc = grid_splitter.dst_grid.abstractions_available['point']
 
@@ -66,11 +69,27 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
         # does not optimize the spatial coverage of the source grid.
         center_lat = pgc.y.get_value()
         # center_lat = pgc.parent['grid_center_lat'].get_value()
-        ucenter_lat = np.unique(center_lat)
-        ucenter_splits = np.array_split(ucenter_lat, grid_splitter.nsplits_dst[0])
+
+        # ucenter_lat = np.unique(center_lat)
+        ucenter_lat = create_unique_global_array(center_lat)
+
+        ocgis_lh(msg=['ucenter_lat=', ucenter_lat], logger='tdk', level=10)
+
+        ucenter_lat = vm.gather(ucenter_lat)
+        if vm.rank == 0:
+            ucenter_lat = hgather(ucenter_lat)
+            ucenter_lat.sort()
+            ucenter_splits = np.array_split(ucenter_lat, grid_splitter.nsplits_dst[0])
+        else:
+            ucenter_splits = [None] * grid_splitter.nsplits_dst[0]
+
+        ocgis_lh(msg=['ucenter_splits=', ucenter_splits], logger='tdk', level=10)
 
         # for ctr, ucenter_split in enumerate(ucenter_splits, start=1):
         for ucenter_split in ucenter_splits:
+
+            ucenter_split = vm.bcast(ucenter_split)
+
             select = np.zeros_like(center_lat, dtype=bool)
             for v in ucenter_split.flat:
                 select = np.logical_or(select, center_lat == v)

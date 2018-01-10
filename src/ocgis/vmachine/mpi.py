@@ -23,7 +23,8 @@ else:
         MPI_ENABLED = True
     else:
         MPI_ENABLED = False
-    MPI_TYPE_MAPPING = {np.int32: MPI.INT, np.int64: MPI.LONG_LONG}
+    MPI_TYPE_MAPPING = {np.int32: MPI.INT, np.int64: MPI.LONG_LONG,
+                        np.dtype('int32'): MPI.INT, np.dtype('float64'): MPI.LONG_LONG}
 
 
 class DummyMPIComm(object):

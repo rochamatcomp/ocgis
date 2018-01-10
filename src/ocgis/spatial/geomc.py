@@ -1,4 +1,5 @@
 import abc
+import logging
 from collections import deque
 
 import numpy as np
@@ -15,6 +16,7 @@ from ocgis.constants import KeywordArgument, GridAbstraction, VariableName, Attr
 from ocgis.exc import RequestableFeature
 from ocgis.spatial.base import AbstractXYZSpatialContainer
 from ocgis.util.helpers import get_formatted_slice, arange_from_dimension, create_unique_global_array
+from ocgis.util.logging_ocgis import ocgis_lh
 from ocgis.variable.base import get_dslice, Variable
 from ocgis.variable.dimension import create_distributed_dimension
 from ocgis.variable.geom import GeometryProcessor, GeometryVariable
@@ -636,12 +638,15 @@ class AbstractGeometryCoordinates(AbstractXYZSpatialContainer):
 
         :rtype: :class:`~ocgis.spatial.geomc.AbstractGeometryCoordinates`
         """
+        ocgis_lh(msg='entering reduce_global', logger='geomc', level=logging.DEBUG)
         raise_if_empty(self)
 
         if self.cindex is None:
             raise ValueError('A coordinate index is required to reduce coordinates.')
 
+        ocgis_lh(msg='starting reduce_reindex_coordinate_index', logger='geomc', level=logging.DEBUG)
         new_cindex, uidx = reduce_reindex_coordinate_index(self.cindex, start_index=self.start_index)
+        ocgis_lh(msg='finished reduce_reindex_coordinate_index', logger='geomc', level=logging.DEBUG)
 
         new_cindex = Variable(name=self.cindex.name, value=new_cindex, dimensions=self.cindex.dimensions)
 
@@ -656,7 +661,7 @@ class AbstractGeometryCoordinates(AbstractXYZSpatialContainer):
         ret._cindex_name = None
         ret.parent = new_parent
         ret.cindex = new_cindex
-
+        ocgis_lh(msg='exiting reduce_global', logger='geomc', level=logging.DEBUG)
         return ret
 
     def _get_dimensions_(self):
@@ -853,10 +858,17 @@ def reduce_reindex_coordinate_index(cindex, start_index=0):
     :param int start_index: The first index to use for the re-indexing of ``cindex``. This may be ``0`` or ``1``.
     :rtype: tuple
     """
+    ocgis_lh(msg='entering reduce_reindex_coordinate_index', logger='geomc', level=logging.DEBUG)
 
     # Get the coordinate index values as a NumPy array.
     try:
+
+        ocgis_lh(msg='calling cindex.get_value()', logger='geomc', level=logging.DEBUG)
+        ocgis_lh(msg='cindex.has_allocated_value={}'.format(cindex.has_allocated_value), logger='geomc',
+                 level=logging.DEBUG)
+        ocgis_lh(msg='cindex.dimensions[0]={}'.format(cindex.dimensions[0]), logger='geomc', level=logging.DEBUG)
         cindex = cindex.get_value()
+        ocgis_lh(msg='finished cindex.get_value()', logger='geomc', level=logging.DEBUG)
     except AttributeError:
         # Assume this is already a NumPy array.
         pass
@@ -868,9 +880,9 @@ def reduce_reindex_coordinate_index(cindex, start_index=0):
     cindex = cindex.flatten()
 
     # Create the unique coordinate index array.
-    # barrier_print('before create_unique_global_array')
+    ocgis_lh(msg='calling create_unique_global_array', logger='geomc', level=logging.DEBUG)
     u = np.array(create_unique_global_array(cindex))
-    # barrier_print('after create_unique_global_array')
+    ocgis_lh(msg='finished create_unique_global_array', logger='geomc', level=logging.DEBUG)
 
     # Synchronize the data type for the new coordinate index.
     lrank = vm.rank

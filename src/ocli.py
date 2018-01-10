@@ -137,7 +137,9 @@ def create_request_dataset(path, esmf_type):
              'UGRID': DriverKey.NETCDF_UGRID,
              'SCRIP': DriverKey.NETCDF_SCRIP}
     odriver = edmap[esmf_type]
-    return RequestDataset(uri=path, driver=odriver)
+    # tdk: HACK: the abstraction target should be determine by is_isomorphic=True and point is available. this requires
+    # tdk: HACK:  an is_isomorphic argument to be passed through the request dataset
+    return RequestDataset(uri=path, driver=odriver, grid_abstraction='point')
 
 
 if __name__ == '__main__':

@@ -19,7 +19,7 @@ DATA = {'ugrid': {'path': os.path.expanduser('~/l/data/bekozi-work/i49-ugrid-ces
         'scrip-point': {'path': os.path.expanduser('~/l/data/bekozi-work/i49-ugrid-cesm/SCRIPgrid_1x1pt_brazil_nomask_c110308.nc'),
                         'etype': 'SCRIP'}}
 WD = os.path.join('/tmp/cesm-manip')
-MPI_PROCS = 1
+MPI_PROCS = 2
 MPIEXEC = 'mpirun'
 OCLI_EXE = '/home/benkoziol/l/ocgis/src/ocli.py'
 
@@ -44,6 +44,8 @@ if __name__ == '__main__':
     cmd = create_command(WD, 'ugrid', 'scrip-struct')
 
     #tdk: REMOVE
+    print(cmd)
+    print ' '.join(cmd)
     print(cmd)
 
     subprocess.check_call(cmd)
