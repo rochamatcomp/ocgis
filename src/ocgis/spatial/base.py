@@ -299,7 +299,7 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         z = kwargs.pop(KeywordArgument.Z, None)
         mask = kwargs.pop(KeywordArgument.MASK, None)
         pos = kwargs.pop(KeywordArgument.POS, (0, 1))
-        is_isomorphic = kwargs.pop(DMK.IS_ISOMORPHIC, constants.UNINITIALIZED)
+        is_isomorphic = kwargs.pop(DMK.IS_ISOMORPHIC, 'auto')
 
         parent = kwargs.get(KeywordArgument.PARENT, None)
 
@@ -347,10 +347,10 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
             self.dimension_map.set_spatial_mask(mask)
 
         # XYZ containers are not considered isomorphic (repeated topology or shapes) by default.
-        if is_isomorphic == constants.UNINITIALIZED:
+        if is_isomorphic == 'auto':
             if self.dimension_map.get_property(DMK.IS_ISOMORPHIC) is None:
                 is_isomorphic = False
-        if is_isomorphic != constants.UNINITIALIZED:
+        if is_isomorphic != 'auto':
             self.is_isomorphic = is_isomorphic
 
     def _gs_iter_dst_grid_slices_(self, grid_splitter):

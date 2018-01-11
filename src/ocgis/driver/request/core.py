@@ -136,11 +136,11 @@ class RequestDataset(AbstractRequestObject):
 
     def __init__(self, uri=None, variable=None, units=None, time_range=None, time_region=None,
                  time_subset_func=None, level_range=None, conform_units_to=None, crs='auto', t_units=None,
-                 t_calendar=None, t_conform_units_to=None, grid_abstraction='auto', dimension_map=None,
-                 field_name=None, driver=None, regrid_source=True, regrid_destination=False, metadata=None,
-                 format_time=True, opened=None, uid=None, rename_variable=None, predicate=None,
+                 t_calendar=None, t_conform_units_to=None, grid_abstraction='auto', grid_is_isomorphic='auto',
+                 dimension_map=None, field_name=None, driver=None, regrid_source=True, regrid_destination=False,
+                 metadata=None, format_time=True, opened=None, uid=None, rename_variable=None, predicate=None,
                  rotated_pole_priority=False, driver_kwargs=None):
-
+        # tdk: DOC: grid_is_isomorphic
         self._is_init = True
 
         self._field_name = field_name
@@ -173,6 +173,7 @@ class RequestDataset(AbstractRequestObject):
         # Field creation options.
         self.format_time = format_time
         self.grid_abstraction = grid_abstraction
+        self.grid_is_isomorphic = grid_is_isomorphic
         # Flag used for regridding to determine if the coordinate system was assigned during initialization.
         self._has_assigned_coordinate_system = False if crs == 'auto' else True
 

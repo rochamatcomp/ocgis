@@ -227,6 +227,7 @@ class AbstractDriver(AbstractOcgisObject):
         raw_field = kwargs.pop('raw_field', None)
         format_time = kwargs.pop(KeywordArgument.FORMAT_TIME, True)
         grid_abstraction = kwargs.pop(KeywordArgument.GRID_ABSTRACTION, self.rd.grid_abstraction)
+        grid_is_isomorphic = kwargs.pop('grid_is_isomorphic', self.rd.grid_is_isomorphic)
 
         if raw_field is None:
             # Get the raw variable collection from source.
@@ -273,8 +274,10 @@ class AbstractDriver(AbstractOcgisObject):
         # TODO: Identify a way to remove this code block; field should be appropriately initialized; format_time and grid_abstraction are part of a dimension map.
         kwargs[KeywordArgument.DIMENSION_MAP] = dimension_map
         kwargs[KeywordArgument.FORMAT_TIME] = format_time
-        if grid_abstraction != constants.UNINITIALIZED:
+        if grid_abstraction != 'auto':
             kwargs[KeywordArgument.GRID_ABSTRACTION] = grid_abstraction
+        if grid_is_isomorphic != 'auto':
+            kwargs['grid_is_isomorphic'] = grid_is_isomorphic
         field = Field.from_variable_collection(raw_field, *args, **kwargs)
 
         # If this is a source grid for regridding, ensure the flag is updated.

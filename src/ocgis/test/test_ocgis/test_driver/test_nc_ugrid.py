@@ -21,6 +21,18 @@ class TestDriverNetcdfUGRID(TestBase):
         du = DriverNetcdfUGRID(rd)
         return du
 
+    def test_system_is_isomorphic(self):
+        """Test the is_isomorphic property on UGRID drivers."""
+
+        f = self.fixture()
+        field = f.create_field()
+        self.assertFalse(field.grid.is_isomorphic)
+
+        for g in [True, False]:
+            f = self.fixture(grid_is_isomorphic=g)
+            field = f.create_field()
+            self.assertEqual(field.grid.is_isomorphic, g)
+
     def test_create_dimension_map(self):
         du = self.fixture()
         group_metadata = du.rd.metadata
