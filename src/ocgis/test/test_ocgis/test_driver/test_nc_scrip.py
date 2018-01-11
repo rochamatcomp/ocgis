@@ -1,13 +1,13 @@
+import itertools
+
 import numpy as np
 from mock import mock
 
-from ocgis import RequestDataset, DimensionMap, Grid, GridUnstruct, PointGC, Field, Variable, Dimension
+from ocgis import RequestDataset, DimensionMap, GridUnstruct, PointGC, Field, Variable, Dimension
 from ocgis.constants import DriverKey, DMK, Topology
 from ocgis.driver.nc_scrip import DriverScripNetcdf
-from ocgis.test.base import TestBase, create_gridxy_global
+from ocgis.test.base import TestBase
 from ocgis.variable.crs import Spherical
-
-import itertools
 
 
 class FixtureDriverScripNetcdf(object):
@@ -57,6 +57,8 @@ class TestDriverScripNetcdf(TestBase, FixtureDriverScripNetcdf):
         path = '/mnt/e24fbd51-d3a4-44e5-82a5-0e20b3487199/data/bekozi-work/i49-ugrid-cesm/0.9x1.25_c110307.nc'
         rd = RequestDataset(path, driver=DriverKey.NETCDF_SCRIP)
         field = rd.create_field()
+        import ipdb;
+        ipdb.set_trace()
         self.assertEqual(field.driver.key, DriverKey.NETCDF_SCRIP)
         self.assertEqual(field.grid.driver.key, DriverKey.NETCDF_SCRIP)
 
@@ -148,15 +150,33 @@ class TestDriverScripNetcdf(TestBase, FixtureDriverScripNetcdf):
         dmap = d.create_dimension_map(meta)
         self.assertIsInstance(dmap, DimensionMap)
 
+        run_topo_test(self, dmap)
+
         actual = dmap.get_property(DMK.IS_ISOMORPHIC)
         self.assertTrue(actual)
 
         field = d.create_field()
 
+        run_topo_test(self, field.dimension_map)
+        dmap = field.grid.dimension_map
+        run_topo_test(self, dmap)
+
         self.assertEqual(field.crs, Spherical())
         self.assertEqual(field.driver.key, DriverKey.NETCDF_SCRIP)
         self.assertIsInstance(field.grid, GridUnstruct)
         desired = meta['dimensions']['grid_size']['size']
+        run_topo_test(self, field.grid.dimension_map)
         actual = field.grid.element_dim.size
+        run_topo_test(self, field.grid.dimension_map)
         self.assertEqual(desired, actual)
         self.assertTrue(field.grid.is_isomorphic)
+        self.assertEqual(field.grid.abstraction, Topology.POLYGON)
+
+        run_topo_test(self, field.grid.dimension_map)
+
+
+def run_topo_test(obj, dmap):
+    topo = dmap.get_topology(Topology.POLYGON)
+    for k in [DMK.X, DMK.Y]:
+        actual = topo.get_dimension(k)
+        obj.assertEqual(actual[0], 'grid_size')

@@ -331,6 +331,10 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
             for var in new_variables:
                 parent.add_variable(var, force=True)
 
+        # tdk: HACK: the set_xyz... method should maybe be on the driver
+        if parent.driver.key in ('netcdf-ugrid', 'netcdf-scrip'):
+            pos = (0, 0)
+
         self._set_xyz_on_dimension_map_(x, y, z, pos, parent=parent)
 
         super(AbstractXYZSpatialContainer, self).__init__(**kwargs)
