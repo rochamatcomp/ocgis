@@ -118,31 +118,6 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
         assert spatial_subset
         assert not merge
 
-    # tdk: convert to function
-    # tdk: RESUME: actually generate weight files using ESMF. write a generator that yields srcfilename, dstfilename, weightfilename
-    import ESMF
-    def create_esmf_grid(filename, esmf_fileformat):
-        esmf_fileformats = {'GRIDSPEC': {'filetype': ESMF.FileFormat.GRIDSPEC, 'class': ESMF.Grid}}
-        esmf_definition = esmf_fileformats[esmf_fileformat]
-        klass = esmf_definition['class']
-        ret = klass(filename=filename, filetype=esmf_definition['filetype'])
-        return ret
-
-    def create_esmf_field(*args):
-        grid = create_esmf_grid(*args)
-        return ESMF.Field(grid=grid)
-
-    def create_regrid(**kwargs):
-        return ESMF.Regrid(**kwargs)
-
-    srcfield = create_esmf_field(src_filename, esmf_src_type)
-    dstfield = create_esmf_field(dst_filename, esmf_dst_type)
-    _ = create_regrid(srcfield=srcfield, dstfield=dstfield, filename=weight_filename)
-    to_destroy = [srcfield.grid, srcfield, dstfield.grid, dstfield]
-    for t in to_destroy:
-        t.destroy()
-    # tdk: /convert to function
-
     # Remove the working directory unless the persist flag is provided.
     if not persist:
         if ocgis.vm.rank == 0:

@@ -1,6 +1,7 @@
 import logging
 import os
 
+import ESMF
 import netCDF4 as nc
 import numpy as np
 from shapely.geometry import box
@@ -16,6 +17,9 @@ from ocgis.util.logging_ocgis import ocgis_lh
 from ocgis.variable.base import VariableCollection
 from ocgis.variable.geom import GeometryVariable
 from ocgis.vmachine.mpi import redistribute_by_src_idx
+
+# tdk: REMOVE
+ESMF.Manager(debug=True)
 
 
 class GridSplitter(AbstractOcgisObject):
@@ -524,9 +528,15 @@ class GridSplitter(AbstractOcgisObject):
             # Increment the counter outside of the loop to avoid counting empty subsets.
             ctr += 1
 
-            # if vm.rank == 0:
-            #     tstop = time.time()
-            #     vm.rank_print('timing::write_subset iteration::{}'.format(tstop - tstart))
+            # tdk: add flag to perform regridding when subsetting - should be false by default?
+            # tdk: need method to pass in esmf_src_type
+            srcfield = create_esmf_field(src_path, 'GRIDSPEC')
+            dstfield = create_esmf_field(dst_path, 'GRIDSPEC')
+            _ = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path,
+                                   regrid_method=ESMF.RegridMethod.CONSERVE, unmapped_action=ESMF.UnmappedAction.IGNORE)
+            to_destroy = [srcfield.grid, srcfield, dstfield.grid, dstfield]
+            for t in to_destroy:
+                t.destroy()
 
         # Global shapes require a VM global scope to collect.
         src_global_shape = global_grid_shape(self.src_grid)
@@ -621,6 +631,23 @@ class GridSplitter(AbstractOcgisObject):
             odata = oindices[odata - 1]
 
         return odata
+
+
+def create_esmf_field(*args):
+    grid = create_esmf_grid(*args)
+    return ESMF.Field(grid=grid)
+
+
+def create_esmf_grid(filename, esmf_fileformat):
+    esmf_fileformats = {'GRIDSPEC': {'filetype': ESMF.FileFormat.GRIDSPEC, 'class': ESMF.Grid}}
+    esmf_definition = esmf_fileformats[esmf_fileformat]
+    klass = esmf_definition['class']
+    ret = klass(filename=filename, filetype=esmf_definition['filetype'], add_corner_stagger=True, is_sphere=False)
+    return ret
+
+
+def create_esmf_regrid(**kwargs):
+    return ESMF.Regrid(**kwargs)
 
 
 def does_contain(container, containee):

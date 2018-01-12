@@ -2,6 +2,7 @@ import os
 import subprocess
 from unittest import SkipTest
 
+import ESMF
 import mock
 import numpy as np
 from click.testing import CliRunner
@@ -209,14 +210,102 @@ class Test(TestBase):
         self.assertLess(diffs.max(), 1e-14)
 
     @attr('mpi')
+    def test_tdk_esmpy_v_rwg(self):
+        # tdk: REMOVE TEST
+        raise SkipTest
+        self.remove_dir = False
+        env.CLOBBER_UNITS_ON_BOUNDS = False
+
+        # tdk
+        print('output directory={}'.format(self.current_dir_output))
+
+        if ocgis.vm.size not in [1, 4]:
+            raise SkipTest('ocgis.vm.size not in [1, 4]')
+
+        # src_grid = create_gridxy_global(resolution=15)
+        src_grid = create_gridxy_global(resolution=12)
+        # tdk: consider using slightly different resolutions
+        dst_grid = create_gridxy_global(resolution=12)
+
+        src_field = create_exact_field(src_grid, 'foo', crs=Spherical())
+        dst_field = create_exact_field(dst_grid, 'foo', crs=Spherical())
+
+        if ocgis.vm.rank == 0:
+            source = self.get_temporary_file_path('source.nc')
+        else:
+            source = None
+        source = ocgis.vm.bcast(source)
+        src_field.write(source)
+        if ocgis.vm.rank == 0:
+            destination = self.get_temporary_file_path('destination.nc')
+        else:
+            destination = None
+        destination = ocgis.vm.bcast(destination)
+        dst_field.write(destination)
+
+        # Generate the source and destination chunks.
+        # runner = CliRunner()
+        # wd = self.current_dir_output
+        # cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--nchunks_dst', '2,3', '--wd', wd]
+        # result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
+        # self.assertEqual(result.exit_code, 0)
+        # self.assertTrue(len(os.listdir(wd)) > 3)
+
+        # Generate weights for each source and destination combination.
+        # tdk: REMOVE
+        # src_template = 'split_src_{}.nc'
+        # dst_template = 'split_dst_{}.nc'
+        # wgt_template = 'esmf_weights_{}.nc'
+        # for ii in range(1, 7):
+        #     src_path = os.path.join(wd, src_template.format(ii))
+        #     dst_path = os.path.join(wd, dst_template.format(ii))
+        #     wgt_path = os.path.join(wd, wgt_template.format(ii))
+        #     # tdk: why is the regional flag needed? i thought this was not needed.
+        #     cmd = ['ESMF_RegridWeightGen', '-s', src_path, '--src_type', 'GRIDSPEC', '-d', dst_path, '--dst_type',
+        #            'GRIDSPEC', '-w', wgt_path, '--method', 'conserve', '--no-log', '-r', '--weight-only']
+        #     subprocess.check_call(cmd)
+
+        # Create a global weights file from the individual weight files.
+        # merged_weights = os.path.join(wd, 'merged_weights.nc')
+        # cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--wd', wd, '--nchunks_dst', '2,3',
+        #             '--merge', '--weight', merged_weights]
+        # result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
+        # self.assertEqual(result.exit_code, 0)
+
+        # Create a standard ESMF weights file from the original grid files.
+        rwg_weights_path = self.get_temporary_file_path('rwg.nc')
+        esmpy_weights_path = self.get_temporary_file_path('esmpy.nc')
+
+        cmd = ['ESMF_RegridWeightGen', '-s', source, '--src_type', 'GRIDSPEC', '-d', destination, '--dst_type',
+               'GRIDSPEC', '-w', rwg_weights_path, '--method', 'conserve', '--no-log', '--weight-only']
+        subprocess.check_call(cmd)
+
+        srcgrid = ESMF.Grid(filename=source, filetype=ESMF.FileFormat.GRIDSPEC, add_corner_stagger=True)
+        dstgrid = ESMF.Grid(filename=destination, filetype=ESMF.FileFormat.GRIDSPEC, add_corner_stagger=True)
+        srcfield = ESMF.Field(grid=srcgrid)
+        dstfield = ESMF.Field(grid=dstgrid)
+        regrid = ESMF.Regrid(srcfield=srcfield, dstfield=dstfield, filename=esmpy_weights_path,
+                             regrid_method=ESMF.RegridMethod.CONSERVE)
+
+        self.assertWeightFilesEquivalent(rwg_weights_path, esmpy_weights_path)
+
+    @attr('mpi')
     def test_cesm_manip(self):
         # tdk: needs to work in parallel
+        # tdk: needs to work with conservative
+        # tdk: CLEAN
+        # tdk: REMOVE
+        self.remove_dir = False
         env.CLOBBER_UNITS_ON_BOUNDS = False
+
+        # tdk
+        print('output directory={}'.format(self.current_dir_output))
 
         if ocgis.vm.size not in [1, 4]:
             raise SkipTest('ocgis.vm.size not in [1, 4]')
 
         src_grid = create_gridxy_global(resolution=15)
+        # src_grid = create_gridxy_global(resolution=12)
         # tdk: consider using slightly different resolutions
         dst_grid = create_gridxy_global(resolution=12)
 
@@ -245,17 +334,18 @@ class Test(TestBase):
         self.assertTrue(len(os.listdir(wd)) > 3)
 
         # Generate weights for each source and destination combination.
-        src_template = 'split_src_{}.nc'
-        dst_template = 'split_dst_{}.nc'
-        wgt_template = 'esmf_weights_{}.nc'
-        for ii in range(1, 7):
-            src_path = os.path.join(wd, src_template.format(ii))
-            dst_path = os.path.join(wd, dst_template.format(ii))
-            wgt_path = os.path.join(wd, wgt_template.format(ii))
-            # tdk: why is the regional flag needed? i thought this was not needed.
-            cmd = ['ESMF_RegridWeightGen', '-s', src_path, '--src_type', 'GRIDSPEC', '-d', dst_path, '--dst_type',
-                   'GRIDSPEC', '-w', wgt_path, '--method', 'conserve', '--no-log', '-r', '--weight-only']
-            subprocess.check_call(cmd)
+        # tdk: REMOVE
+        # src_template = 'split_src_{}.nc'
+        # dst_template = 'split_dst_{}.nc'
+        # wgt_template = 'esmf_weights_{}.nc'
+        # for ii in range(1, 7):
+        #     src_path = os.path.join(wd, src_template.format(ii))
+        #     dst_path = os.path.join(wd, dst_template.format(ii))
+        #     wgt_path = os.path.join(wd, wgt_template.format(ii))
+        #     # tdk: why is the regional flag needed? i thought this was not needed.
+        #     cmd = ['ESMF_RegridWeightGen', '-s', src_path, '--src_type', 'GRIDSPEC', '-d', dst_path, '--dst_type',
+        #            'GRIDSPEC', '-w', wgt_path, '--method', 'conserve', '--no-log', '-r', '--weight-only']
+        #     subprocess.check_call(cmd)
 
         # Create a global weights file from the individual weight files.
         merged_weights = os.path.join(wd, 'merged_weights.nc')
@@ -266,9 +356,17 @@ class Test(TestBase):
 
         # Create a standard ESMF weights file from the original grid files.
         esmf_weights_path = self.get_temporary_file_path('esmf_desired_weights.nc')
-        cmd = ['ESMF_RegridWeightGen', '-s', source, '--src_type', 'GRIDSPEC', '-d', destination, '--dst_type',
-               'GRIDSPEC', '-w', esmf_weights_path, '--method', 'conserve', '--no-log']
-        subprocess.check_call(cmd)
+
+        # cmd = ['ESMF_RegridWeightGen', '-s', source, '--src_type', 'GRIDSPEC', '-d', destination, '--dst_type',
+        #        'GRIDSPEC', '-w', esmf_weights_path, '--method', 'conserve', '--no-log']
+        # subprocess.check_call(cmd)
+
+        srcgrid = ESMF.Grid(filename=source, filetype=ESMF.FileFormat.GRIDSPEC, add_corner_stagger=True)
+        dstgrid = ESMF.Grid(filename=destination, filetype=ESMF.FileFormat.GRIDSPEC, add_corner_stagger=True)
+        srcfield = ESMF.Field(grid=srcgrid)
+        dstfield = ESMF.Field(grid=dstgrid)
+        regrid = ESMF.Regrid(srcfield=srcfield, dstfield=dstfield, filename=esmf_weights_path,
+                             regrid_method=ESMF.RegridMethod.CONSERVE)
 
         self.assertWeightFilesEquivalent(esmf_weights_path, merged_weights)
 
