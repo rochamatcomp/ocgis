@@ -530,6 +530,7 @@ class GridSplitter(AbstractOcgisObject):
 
             # tdk: add flag to perform regridding when subsetting - should be false by default?
             # tdk: need method to pass in esmf_src_type
+            vm.barrier()
             srcfield = create_esmf_field(src_path, 'GRIDSPEC')
             dstfield = create_esmf_field(dst_path, 'GRIDSPEC')
             _ = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path,
@@ -537,6 +538,7 @@ class GridSplitter(AbstractOcgisObject):
             to_destroy = [srcfield.grid, srcfield, dstfield.grid, dstfield]
             for t in to_destroy:
                 t.destroy()
+            vm.barrier()
 
         # Global shapes require a VM global scope to collect.
         src_global_shape = global_grid_shape(self.src_grid)
