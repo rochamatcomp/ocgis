@@ -73,7 +73,7 @@ class Test(TestBase):
                 driver = 'netcdf-scrip'
             idx = int(fn[10:11])
 
-            print fullfile, driver, idx
+            print(fullfile, driver, idx)
 
             field = RequestDataset(fullfile, driver=driver).create_field()
             extent = field.grid.extent_global
