@@ -1,3 +1,4 @@
+import itertools
 import logging
 from abc import ABCMeta
 from collections import OrderedDict
@@ -24,8 +25,6 @@ from ocgis.variable.crs import CFCoordinateReferenceSystem, CoordinateReferenceS
     AbstractProj4CRS
 from ocgis.variable.dimension import Dimension
 from ocgis.variable.temporal import TemporalVariable
-import itertools
-
 from ocgis.vmachine.mpi import OcgDist
 
 
@@ -339,6 +338,7 @@ class DriverNetcdfCF(AbstractDriverNetcdfCF):
     Metadata-aware netCDF driver interpreting CF-Grid by default.
     """
     key = DriverKey.NETCDF_CF
+    esmf_filetype = 'GRIDSPEC'
     _default_crs = env.DEFAULT_COORDSYS
     _priority = True
 

@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 
 import numpy as np
 from mock import mock, PropertyMock
@@ -92,14 +93,14 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         gu = GridUnstruct(geoms=[polygc, pointgc])
         gu.parent.write(ufile)
 
-    def get_grid_splitter(self):
+    def get_grid_splitter(self, **kwargs):
         src_grid = self.get_gridxy_global(wrapped=False, with_bounds=True)
         dst_grid = self.get_gridxy_global(wrapped=False, with_bounds=True, resolution=0.5)
 
         self.add_data_variable_to_grid(src_grid)
         self.add_data_variable_to_grid(dst_grid)
 
-        gs = GridSplitter(src_grid, dst_grid, (2, 3), paths=self.fixture_paths)
+        gs = GridSplitter(src_grid, dst_grid, (2, 3), paths=self.fixture_paths, **kwargs)
         return gs
 
     @attr('mpi', 'slow')
@@ -163,8 +164,10 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         # Test optimizations are chosen appropriately.
         grid = mock.create_autospec(Grid)
         grid.ndim = 2
+        grid.resolution_max = 10
         self.assertIsInstance(grid, Grid)
         gridu = mock.create_autospec(GridUnstruct)
+        gridu.resolution_max = None
         self.assertIsInstance(gridu, GridUnstruct)
         for g in [grid, gridu]:
             g._gs_initialize_ = mock.Mock()
@@ -175,6 +178,13 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         gs = GridSplitter(gridu, grid, (3, 4), src_grid_resolution=1.0, dst_grid_resolution=2.0,
                           paths=self.fixture_paths)
         self.assertTrue(gs.optimized_bbox_subset)
+
+        # Test ESMF keyword arguments.
+        mock_ESMF = mock.Mock()
+        with mock.patch.dict(sys.modules, {'ESMF': mock_ESMF}):
+            gs = self.get_grid_splitter(genweights=True)
+            self.assertEqual(len(gs.esmf_kwargs), 2)
+            self.assertTrue(gs.genweights)
 
     def test_system_regrid_target_types(self):
         """Test grids are retrieved from the supported input regrid target types."""

@@ -10,6 +10,7 @@ class DriverNetcdfUGRID(AbstractUnstructuredDriver, DriverNetcdfCF):
     by UGRID.
     """
 
+    esmf_filetype = 'UGRID'
     _priority = False
     key = DriverKey.NETCDF_UGRID
 

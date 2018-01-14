@@ -11,6 +11,8 @@ from ocgis.vmachine.mpi import hgather
 class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
     # tdk: DOC
     # tdk: RENAME: DriverNetcdfSCRIP
+
+    esmf_filetype = 'SCRIP'
     key = DriverKey.NETCDF_SCRIP
     _default_crs = env.DEFAULT_COORDSYS
 

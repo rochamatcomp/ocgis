@@ -1,7 +1,6 @@
 import logging
 import os
 
-import ESMF
 import netCDF4 as nc
 import numpy as np
 from shapely.geometry import box
@@ -17,9 +16,6 @@ from ocgis.util.logging_ocgis import ocgis_lh
 from ocgis.variable.base import VariableCollection
 from ocgis.variable.geom import GeometryVariable
 from ocgis.vmachine.mpi import redistribute_by_src_idx
-
-# tdk: REMOVE
-ESMF.Manager(debug=True)
 
 
 class GridSplitter(AbstractOcgisObject):
@@ -81,17 +77,26 @@ class GridSplitter(AbstractOcgisObject):
 
     def __init__(self, source, destination, nsplits_dst, paths=None, check_contains=False, allow_masked=True,
                  src_grid_resolution=None, dst_grid_resolution=None, optimized_bbox_subset='auto', iter_dst=None,
-                 buffer_value=None, redistribute=False):
-        # TODO: Need to test with an unstructured grid as destination.
+                 buffer_value=None, redistribute=False, genweights=False, esmf_kwargs=None):
         # tdk: LAST: make nsplits_dst an optional parameter. this will make it easier to do a merge-only operation.
+        # tdk: DOC: genweights, esmf_kwargs
+        # tdk: RENAME: Chunked weight generation
 
         self._src_grid = None
         self._dst_grid = None
         self._buffer_value = None
         self._optimized_bbox_subset = None
 
+        self.genweights = genweights
         self.source = source
         self.destination = destination
+
+        if esmf_kwargs is None:
+            esmf_kwargs = {}
+        if self.genweights:
+            esmf_kwargs = esmf_kwargs.copy()
+            update_esmf_kwargs(esmf_kwargs)
+        self.esmf_kwargs = esmf_kwargs
 
         # Assert the split dimension matches the destination grid dimension.
         if len(nsplits_dst) != self.dst_grid.ndim:
@@ -147,7 +152,8 @@ class GridSplitter(AbstractOcgisObject):
             # tdk: FEATURE: this should use is_isomorphic as opposed to resolution to avoid loading the coordinate data to determine resolution.
             # tdk: FEATURE:  requires adding grid_is_isomorphic argument to request dataset to pass to dimension map creation.
             # if self.src_grid.is_isomorphic and self.dst_grid.is_isomorphic:
-            if self.src_grid.resolution_max is not None and self.dst_grid.resolution_max is not None:
+            if (self.src_grid.resolution_max is not None or self.src_grid_resolution is not None) and \
+                    (self.dst_grid.resolution_max is not None or self.dst_grid_resolution is not None):
                 ret = True
             else:
                 ret = False
@@ -483,6 +489,7 @@ class GridSplitter(AbstractOcgisObject):
         """
         Write grid subsets to netCDF files using the provided filename templates.
         """
+        # tdk: RENAME: this should probably be changed to execute
         src_filenames = []
         dst_filenames = []
         wgt_filenames = []
@@ -496,10 +503,6 @@ class GridSplitter(AbstractOcgisObject):
         ocgis_lh(logger='grid_splitter', msg='starting self.iter_src_grid_subsets', level=logging.DEBUG)
         for sub_src, src_slc, sub_dst, dst_slc in self.iter_src_grid_subsets(yield_dst=True):
             ocgis_lh(logger='grid_splitter', msg='finished iteration {} for self.iter_src_grid_subsets'.format(ctr), level=logging.DEBUG)
-            # if vm.rank == 0:
-            #     vm.rank_print('write_subset iterator count :: {}'.format(ctr))
-            #     tstart = time.time()
-            # padded = create_zero_padded_integer(ctr, nzeros)
 
             src_path = self.create_full_path_from_template('src_template', index=ctr)
             dst_path = self.create_full_path_from_template('dst_template', index=ctr)
@@ -530,15 +533,17 @@ class GridSplitter(AbstractOcgisObject):
 
             # tdk: add flag to perform regridding when subsetting - should be false by default?
             # tdk: need method to pass in esmf_src_type
-            vm.barrier()
-            srcfield = create_esmf_field(src_path, 'GRIDSPEC')
-            dstfield = create_esmf_field(dst_path, 'GRIDSPEC')
-            _ = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path,
-                                   regrid_method=ESMF.RegridMethod.CONSERVE, unmapped_action=ESMF.UnmappedAction.IGNORE)
-            to_destroy = [srcfield.grid, srcfield, dstfield.grid, dstfield]
-            for t in to_destroy:
-                t.destroy()
-            vm.barrier()
+            if self.genweights:
+                vm.barrier()
+                srcfield = create_esmf_field(src_path, self.src_grid.driver.esmf_filetype)
+                dstfield = create_esmf_field(dst_path, self.dst_grid.driver.esmf_filetype)
+                try:
+                    _ = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path, **self.esmf_kwargs)
+                finally:
+                    to_destroy = [srcfield.grid, srcfield, dstfield.grid, dstfield]
+                    for t in to_destroy:
+                        t.destroy()
+                vm.barrier()
 
         # Global shapes require a VM global scope to collect.
         src_global_shape = global_grid_shape(self.src_grid)
@@ -635,19 +640,45 @@ class GridSplitter(AbstractOcgisObject):
         return odata
 
 
+def esmf_func(func):
+    def wrap(*args, **kwargs):
+        import ESMF
+        # tdk: REMOVE
+        ESMF.Manager(debug=True)
+        globals().update({'ESMF': ESMF})
+        try:
+            return func(*args, **kwargs)
+        finally:
+            globals().pop('ESMF')
+
+    return wrap
+
+
+@esmf_func
+def update_esmf_kwargs(target):
+    if 'regrid_method' not in target:
+        target['regrid_method'] = ESMF.RegridMethod.CONSERVE
+    if 'unmapped_action' not in target:
+        target['unmapped_action'] = ESMF.UnmappedAction.IGNORE
+
+
+@esmf_func
 def create_esmf_field(*args):
     grid = create_esmf_grid(*args)
     return ESMF.Field(grid=grid)
 
 
+@esmf_func
 def create_esmf_grid(filename, esmf_fileformat):
     esmf_fileformats = {'GRIDSPEC': {'filetype': ESMF.FileFormat.GRIDSPEC, 'class': ESMF.Grid}}
     esmf_definition = esmf_fileformats[esmf_fileformat]
     klass = esmf_definition['class']
+    # tdk: what to do with add_corner_stagger and is_sphere?
     ret = klass(filename=filename, filetype=esmf_definition['filetype'], add_corner_stagger=True, is_sphere=False)
     return ret
 
 
+@esmf_func
 def create_esmf_regrid(**kwargs):
     return ESMF.Regrid(**kwargs)
 

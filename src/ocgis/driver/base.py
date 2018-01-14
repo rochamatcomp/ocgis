@@ -5,7 +5,6 @@ from contextlib import contextmanager
 from copy import deepcopy
 from warnings import warn
 
-import numpy as np
 import six
 
 from ocgis import constants, GridUnstruct
@@ -37,7 +36,8 @@ class AbstractDriver(AbstractOcgisObject):
 
     _default_crs = None
     _priority = False
-    common_extension = None
+    common_extension = None  # The standard file extension commonly associated with the canonical file format.
+    esmf_filetype = None  # The associated ESMF file type. This may be None.
 
     def __init__(self, rd):
         self.rd = rd
