@@ -338,7 +338,7 @@ class DriverNetcdfCF(AbstractDriverNetcdfCF):
     Metadata-aware netCDF driver interpreting CF-Grid by default.
     """
     key = DriverKey.NETCDF_CF
-    esmf_filetype = 'GRIDSPEC'
+    _esmf_filetype = 'GRIDSPEC'
     _default_crs = env.DEFAULT_COORDSYS
     _priority = True
 

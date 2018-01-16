@@ -37,7 +37,7 @@ class AbstractDriver(AbstractOcgisObject):
     _default_crs = None
     _priority = False
     common_extension = None  # The standard file extension commonly associated with the canonical file format.
-    esmf_filetype = None  # The associated ESMF file type. This may be None.
+    _esmf_filetype = None  # The associated ESMF file type. This may be None.
     _esmf_grid_class = constants.ESMFGridClass.GRID  # The ESMF grid class type.
 
     def __init__(self, rd):
@@ -45,6 +45,13 @@ class AbstractDriver(AbstractOcgisObject):
         self._metadata_raw = None
         self._dimension_map_raw = None
         self._dist = None
+
+    @classmethod
+    def get_esmf_filetype(cls):
+        # tdk: ORDER
+        # tdk: DOC
+        import ESMF
+        return getattr(ESMF.constants.FileFormat, cls._esmf_filetype)
 
     @classmethod
     def get_esmf_grid_class(cls):
@@ -760,6 +767,8 @@ class AbstractTabularDriver(AbstractDriver):
 
 @six.add_metaclass(ABCMeta)
 class AbstractUnstructuredDriver(AbstractOcgisObject):
+    _esmf_grid_class = constants.ESMFGridClass.MESH
+
     @staticmethod
     def get_element_dimension(gc):
         """See :meth:`ocgis.spatial.geomc.AbstractGeometryCoordinates.element_dim`"""

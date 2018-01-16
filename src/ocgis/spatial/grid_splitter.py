@@ -9,7 +9,7 @@ from ocgis import Dimension, vm
 from ocgis import Variable
 from ocgis.base import AbstractOcgisObject
 from ocgis.collection.field import Field
-from ocgis.constants import GridSplitterConstants, RegriddingRole, Topology
+from ocgis.constants import GridSplitterConstants, RegriddingRole, Topology, DMK
 from ocgis.driver.request.core import RequestDataset
 from ocgis.spatial.grid import GridUnstruct, AbstractGrid
 from ocgis.util.logging_ocgis import ocgis_lh
@@ -535,8 +535,8 @@ class GridSplitter(AbstractOcgisObject):
             # tdk: need method to pass in esmf_src_type
             if self.genweights:
                 vm.barrier()
-                srcfield = create_esmf_field(src_path, self.src_grid.driver.esmf_filetype)
-                dstfield = create_esmf_field(dst_path, self.dst_grid.driver.esmf_filetype)
+                srcfield = create_esmf_field(src_path, sub_src)
+                dstfield = create_esmf_field(dst_path, sub_dst)
                 try:
                     _ = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path, **self.esmf_kwargs)
                 finally:
@@ -670,20 +670,15 @@ def create_esmf_field(*args):
 
 
 @esmf_func
-def create_esmf_grid(filename, esmf_fileformat):
-    # tdk: need to handle SCRIP structured v. unstructured
-    esmf_fileformats = {'GRIDSPEC': {'filetype': ESMF.FileFormat.GRIDSPEC, 'class': ESMF.Grid},
-                        'UGRID': {'filetype': ESMF.FileFormat.UGRID, 'class': ESMF.Mesh},
-                        'SCRIP': {'filetype': ESMF.FileFormat.SCRIP, 'class': ESMF.Mesh}}
-    esmf_definition = esmf_fileformats[esmf_fileformat]
-    klass = esmf_definition['class']
+def create_esmf_grid(filename, grid):
     # tdk: what to do with add_corner_stagger and is_sphere?
-    filetype = esmf_definition['filetype']
+    filetype = grid.driver.get_esmf_filetype()
+    klass = grid.driver.get_esmf_grid_class()
     if klass == ESMF.Grid:
         ret = klass(filename=filename, filetype=filetype, add_corner_stagger=True, is_sphere=False)
     else:
-        # tdk: need method to retrieve meshname from the ugrid object
-        ret = klass(filename=filename, filetype=filetype, meshname='ocgis_mesh_host')
+        meshname = str(grid.dimension_map.get_variable(DMK.ATTRIBUTE_HOST))
+        ret = klass(filename=filename, filetype=filetype, meshname=meshname)
     return ret
 
 
