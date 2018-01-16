@@ -287,7 +287,8 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
 
         # Split source and destination grids ---------------------------------------------------------------------------
 
-        gs = GridSplitter(src_grid, dst_grid, (2, 2), check_contains=False, allow_masked=True, paths=self.fixture_paths)
+        gs = GridSplitter(src_grid, dst_grid, (2, 2), check_contains=False, allow_masked=True, paths=self.fixture_paths,
+                          genweights=True)
         gs.write_subsets()
 
         # Load the grid splitter index file ----------------------------------------------------------------------------
@@ -302,14 +303,14 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         dv = destination_filename.join_string_value()
 
         # Create weight files for each subset --------------------------------------------------------------------------
-
-        for ii, sfn in enumerate(sv):
-            esp = os.path.join(self.current_dir_output, sfn)
-            edp = os.path.join(self.current_dir_output, dv[ii])
-            ewp = gs.create_full_path_from_template('wgt_template', index=ii + 1)
-            cmd = ['ESMF_RegridWeightGen', '-s', esp, '--src_type', 'GRIDSPEC', '-d', edp, '--dst_type',
-                   'GRIDSPEC', '-w', ewp, '--method', 'conserve', '-r', '--no_log']
-            subprocess.check_call(cmd)
+        #
+        # for ii, sfn in enumerate(sv):
+        #     esp = os.path.join(self.current_dir_output, sfn)
+        #     edp = os.path.join(self.current_dir_output, dv[ii])
+        #     ewp = gs.create_full_path_from_template('wgt_template', index=ii + 1)
+        #     cmd = ['ESMF_RegridWeightGen', '-s', esp, '--src_type', 'GRIDSPEC', '-d', edp, '--dst_type',
+        #            'GRIDSPEC', '-w', ewp, '--method', 'conserve', '-r', '--no_log']
+        #     subprocess.check_call(cmd)
 
         # Merge weight files -------------------------------------------------------------------------------------------
 
