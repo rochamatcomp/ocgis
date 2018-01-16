@@ -674,7 +674,7 @@ def create_esmf_grid(filename, esmf_fileformat):
     # tdk: need to handle SCRIP structured v. unstructured
     esmf_fileformats = {'GRIDSPEC': {'filetype': ESMF.FileFormat.GRIDSPEC, 'class': ESMF.Grid},
                         'UGRID': {'filetype': ESMF.FileFormat.UGRID, 'class': ESMF.Mesh},
-                        'SCRIP': {'filetype': ESMF.FileFormat.SCRIP, 'class': ESMF.Grid}}
+                        'SCRIP': {'filetype': ESMF.FileFormat.SCRIP, 'class': ESMF.Mesh}}
     esmf_definition = esmf_fileformats[esmf_fileformat]
     klass = esmf_definition['class']
     # tdk: what to do with add_corner_stagger and is_sphere?

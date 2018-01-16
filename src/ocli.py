@@ -48,8 +48,10 @@ def ocli():
               help='If --no_merge, do not merge weight file chunks into a global weight file.')
 @click.option('--spatial_subset/--no_spatial_subset', default=False,
               help='Subset the destination grid by the bounding box spatial extent of the source grid.')
+@click.option('--genweights/--no_genweights', default=True,
+              help='Generate weights using ESMPy for each source and destination subset.')
 def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, src_resolution, dst_resolution,
-               buffer_distance, wd, persist, merge, spatial_subset):
+               buffer_distance, wd, persist, merge, spatial_subset, genweights):
     # tdk: LAST: RENAME: to ESMPy_RegridWeightGen?
     ocgis.env.configure_logging()
 
@@ -106,7 +108,8 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
             paths['wgt_template'] = weight
 
         gs = GridSplitter(rd_src, rd_dst, nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
-                          dst_grid_resolution=dst_resolution, buffer_value=buffer_distance, redistribute=True)
+                          dst_grid_resolution=dst_resolution, buffer_value=buffer_distance, redistribute=True,
+                          genweights=genweights)
 
     # Create the global weight file.
     if merge:
