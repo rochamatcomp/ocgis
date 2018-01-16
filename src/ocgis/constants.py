@@ -45,6 +45,22 @@ GITHUB_ISSUES = 'https://github.com/NCPP/ocgis/issues'
 MPI_EMPTY_VALUE = -999
 
 
+class ESMFGridClass(Enum):
+    GRID = 'grid'
+    MESH = 'mesh'
+
+    @classmethod
+    def get_esmf_class(cls, target):
+        import ESMF
+        if target == cls.GRID:
+            ret = ESMF.Grid
+        elif target == cls.MESH:
+            ret = ESMF.Mesh
+        else:
+            raise NotImplementedError(target)
+        return ret
+
+
 class HeaderName(object):
     ID_SELECTION_GEOMETRY = 'UGID'
     ID_GEOMETRY = 'GID'

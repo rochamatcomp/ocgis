@@ -881,7 +881,10 @@ def reduce_reindex_coordinate_index(cindex, start_index=0):
 
     # Create the unique coordinate index array.
     ocgis_lh(msg='calling create_unique_global_array', logger='geomc', level=logging.DEBUG)
-    u = np.array(create_unique_global_array(cindex))
+    if vm.size > 1:
+        u = np.array(create_unique_global_array(cindex))
+    else:
+        u = np.unique(cindex)
     ocgis_lh(msg='finished create_unique_global_array', logger='geomc', level=logging.DEBUG)
 
     # Synchronize the data type for the new coordinate index.

@@ -175,11 +175,11 @@ class GridSplitter(AbstractOcgisObject):
                 if self.dst_grid_resolution is None:
                     dst_grid_resolution = self.dst_grid.resolution_max
                 else:
-                    dst_grid_resolution = self.dst_grid_resolution_max
+                    dst_grid_resolution = self.dst_grid_resolution
                 if self.src_grid_resolution is None:
                     src_grid_resolution = self.src_grid.resolution_max
                 else:
-                    src_grid_resolution = self.src_grid_resolution_max
+                    src_grid_resolution = self.src_grid_resolution
 
                 if dst_grid_resolution <= src_grid_resolution:
                     target_resolution = dst_grid_resolution
@@ -643,14 +643,10 @@ class GridSplitter(AbstractOcgisObject):
 def esmf_func(func):
     def wrap(*args, **kwargs):
         import ESMF
+        globals().update({'ESMF': ESMF})
         # tdk: REMOVE
         ESMF.Manager(debug=True)
-        globals().update({'ESMF': ESMF})
-        try:
-            return func(*args, **kwargs)
-        finally:
-            globals().pop('ESMF')
-
+        return func(*args, **kwargs)
     return wrap
 
 
@@ -665,16 +661,29 @@ def update_esmf_kwargs(target):
 @esmf_func
 def create_esmf_field(*args):
     grid = create_esmf_grid(*args)
-    return ESMF.Field(grid=grid)
+    # tdk: need method to specify meshloc for fields
+    if isinstance(grid, ESMF.Mesh):
+        meshloc = ESMF.MeshLoc.ELEMENT
+    else:
+        meshloc = None
+    return ESMF.Field(grid=grid, meshloc=meshloc)
 
 
 @esmf_func
 def create_esmf_grid(filename, esmf_fileformat):
-    esmf_fileformats = {'GRIDSPEC': {'filetype': ESMF.FileFormat.GRIDSPEC, 'class': ESMF.Grid}}
+    # tdk: need to handle SCRIP structured v. unstructured
+    esmf_fileformats = {'GRIDSPEC': {'filetype': ESMF.FileFormat.GRIDSPEC, 'class': ESMF.Grid},
+                        'UGRID': {'filetype': ESMF.FileFormat.UGRID, 'class': ESMF.Mesh},
+                        'SCRIP': {'filetype': ESMF.FileFormat.SCRIP, 'class': ESMF.Grid}}
     esmf_definition = esmf_fileformats[esmf_fileformat]
     klass = esmf_definition['class']
     # tdk: what to do with add_corner_stagger and is_sphere?
-    ret = klass(filename=filename, filetype=esmf_definition['filetype'], add_corner_stagger=True, is_sphere=False)
+    filetype = esmf_definition['filetype']
+    if klass == ESMF.Grid:
+        ret = klass(filename=filename, filetype=filetype, add_corner_stagger=True, is_sphere=False)
+    else:
+        # tdk: need method to retrieve meshname from the ugrid object
+        ret = klass(filename=filename, filetype=filetype, meshname='ocgis_mesh_host')
     return ret
 
 

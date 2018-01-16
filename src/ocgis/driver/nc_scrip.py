@@ -16,6 +16,11 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
     key = DriverKey.NETCDF_SCRIP
     _default_crs = env.DEFAULT_COORDSYS
 
+    @classmethod
+    def get_esmf_grid_class(cls, grid):
+        # tdk: RESUME: method to distinguish between a scrip grid with 4 v 5 corners
+        tkk
+
     @staticmethod
     def array_resolution(value, axis):
         # tdk: doc

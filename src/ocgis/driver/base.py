@@ -38,12 +38,19 @@ class AbstractDriver(AbstractOcgisObject):
     _priority = False
     common_extension = None  # The standard file extension commonly associated with the canonical file format.
     esmf_filetype = None  # The associated ESMF file type. This may be None.
+    esmf_grid_class = constants.ESMFGridClass.GRID  # The ESMF grid class type. This may be None if determined at runtime.
 
     def __init__(self, rd):
         self.rd = rd
         self._metadata_raw = None
         self._dimension_map_raw = None
         self._dist = None
+
+    @classmethod
+    def get_esmf_grid_class(cls, grid):
+        # tdk: ORDER
+        # tdk: DOC
+        return constants.ESMFGridClass.get_esmf_class(cls.esmf_grid_class)
 
     def __eq__(self, other):
         return self.key == other.key

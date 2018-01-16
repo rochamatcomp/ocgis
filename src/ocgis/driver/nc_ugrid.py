@@ -1,4 +1,4 @@
-from ocgis import Variable
+from ocgis import Variable, constants
 from ocgis.constants import DriverKey, DMK, VariableName, Topology, KeywordArgument
 from ocgis.driver.base import AbstractUnstructuredDriver
 from ocgis.driver.nc import DriverNetcdfCF
@@ -11,6 +11,7 @@ class DriverNetcdfUGRID(AbstractUnstructuredDriver, DriverNetcdfCF):
     """
 
     esmf_filetype = 'UGRID'
+    esmf_grid_class = constants.ESMFGridClass.MESH
     _priority = False
     key = DriverKey.NETCDF_UGRID
 

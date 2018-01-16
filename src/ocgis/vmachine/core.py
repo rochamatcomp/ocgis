@@ -5,7 +5,8 @@ import numpy as np
 from ocgis.base import AbstractOcgisObject
 from ocgis.constants import MPIOps
 from ocgis.exc import SubcommNotFoundError, SubcommAlreadyCreatedError
-from ocgis.vmachine.mpi import MPI_COMM, get_nonempty_ranks, MPI_SIZE, MPI_RANK, COMM_NULL, MPI_TYPE_MAPPING
+from ocgis.vmachine.mpi import MPI_COMM, get_nonempty_ranks, MPI_SIZE, MPI_RANK, COMM_NULL, MPI_TYPE_MAPPING, \
+    DummyMPIComm
 
 
 class OcgVM(AbstractOcgisObject):
@@ -25,10 +26,17 @@ class OcgVM(AbstractOcgisObject):
         self._comm = comm
         self._original_comm = comm
 
-        if hasattr(self._comm, 'Get_group'):
-            is_dummy = False
-        else:
+        if isinstance(comm, DummyMPIComm):
             is_dummy = True
+        else:
+            is_dummy = False
+
+        # tdk: REMOVE
+        # if hasattr(self._comm, 'Get_group'):
+        #     is_dummy = False
+        # else:
+        #     is_dummy = True
+
         self._is_dummy = is_dummy
 
     def __del__(self):
@@ -95,7 +103,9 @@ class OcgVM(AbstractOcgisObject):
         return self.comm.bcast(*args, **kwargs)
 
     def create_subcomm(self, name, ranks, is_current=False, clobber=False):
-        if not self._is_dummy:
+        if self._is_dummy:
+            self._subcomms[name] = self._comm
+        else:
             if len(ranks) == 0:
                 self._subcomms[name] = COMM_NULL
             else:
@@ -121,12 +131,13 @@ class OcgVM(AbstractOcgisObject):
         return name, live_ranks
 
     def free_subcomm(self, subcomm=None, name=None):
-        if subcomm is None:
-            if name not in self._subcomms:
-                raise SubcommNotFoundError(name)
-            subcomm = self._subcomms.pop(name)
-        if subcomm != COMM_NULL:
-            subcomm.Free()
+        if not self._is_dummy:
+            if subcomm is None:
+                if name not in self._subcomms:
+                    raise SubcommNotFoundError(name)
+                subcomm = self._subcomms.pop(name)
+            if subcomm != COMM_NULL:
+                subcomm.Free()
 
     def finalize(self):
         for v in self._subcomms.values():

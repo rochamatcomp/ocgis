@@ -6,7 +6,7 @@ import numpy as np
 from mock import mock, PropertyMock
 from shapely.geometry import box
 
-from ocgis import RequestDataset, Field, vm
+from ocgis import RequestDataset, Field, vm, env
 from ocgis.base import get_variable_names
 from ocgis.constants import MPIWriteMode, GridSplitterConstants, VariableName, WrappedState
 from ocgis.driver.nc_ugrid import DriverNetcdfUGRID
@@ -241,23 +241,38 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         #     # print(sub[0].extent)
         # tkk
 
-    def test_system_splitting_unstructured(self):
+    def run_system_splitting_unstructured(self, genweights):
+        # tdk: ORDER
         # tdk: LAST: fails with mpi4py import when it is not installed. should pass in serial.
+        env.CLOBBER_UNITS_ON_BOUNDS = False
+
         ufile = self.get_temporary_file_path('ugrid.nc')
         resolution = 10.
         self.fixture_regular_ugrid_file(ufile, resolution)
-        src_grid = RequestDataset(ufile, driver=DriverNetcdfUGRID, grid_abstraction='point').get().grid
+        src_rd = RequestDataset(ufile, driver=DriverNetcdfUGRID, grid_abstraction='point')
+        # src_rd.inspect()
+        src_grid = src_rd.get().grid
         self.assertEqual(src_grid.abstraction, 'point')
+        dst_grid = self.get_gridxy_global(resolution=20., crs=Spherical())
 
-        dst_grid = self.get_gridxy_global(resolution=20.)
         gs = GridSplitter(src_grid, dst_grid, (3, 3), check_contains=False, src_grid_resolution=10.,
-                          paths=self.fixture_paths)
+                          paths=self.fixture_paths, genweights=genweights)
 
         gs.write_subsets()
 
         actual = gs.create_full_path_from_template('src_template', index=1)
         actual = RequestDataset(actual).get()
         self.assertIn(GridSplitterConstants.IndexFile.NAME_SRCIDX_GUID, actual)
+
+    def test_system_splitting_unstructured_no_weights(self):
+        """Only split the unstructured grid source."""
+        self.run_system_splitting_unstructured(False)
+
+    @attr('esmf')
+    def test_system_splitting_unstructured_with_weights(self):
+        """Only split the unstructured grid source."""
+        self.run_system_splitting_unstructured(True)
+        subprocess.check_call(['tree', self.current_dir_output])
 
     @attr('esmf')
     def test_create_merged_weight_file(self):
