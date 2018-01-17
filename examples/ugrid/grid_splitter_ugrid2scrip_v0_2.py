@@ -7,21 +7,22 @@ import ocgis
 #tdk: FEATURE: need method to calculate nchunks_dst from a SCRIP grid
 #tdk: FEATURE: need method to calculate spatial resolution from bounds - useful for the 1pt case
 
-DATA = {'ugrid': {'path': os.path.expanduser('~/l/data/bekozi-work/i49-ugrid-cesm/UGRID_1km-merge-10min_HYDRO1K-merge-nomask_c130402.nc'),
+DATA = {
+    'ugrid': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/UGRID_1km-merge-10min_HYDRO1K-merge-nomask_c130402.nc'),
                   'nchunks_dst': 100,
                   'etype': 'UGRID'},
-        'scrip-struct': {'path': os.path.expanduser('~/l/data/bekozi-work/i49-ugrid-cesm/0.9x1.25_c110307.nc'),
+    'scrip-struct': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/0.9x1.25_c110307.nc'),
                          'nchunks_dst': 96,
                          'etype': 'SCRIP'},
-        'scrip-unstruct': {'path': os.path.expanduser('~/l/data/bekozi-work/i49-ugrid-cesm/SCRIPgrid_ne16np4_nomask_c110512.nc'),
+    'scrip-unstruct': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_ne16np4_nomask_c110512.nc'),
                            'nchunks_dst': 50,
                            'etype': 'SCRIP'},
-        'scrip-point': {'path': os.path.expanduser('~/l/data/bekozi-work/i49-ugrid-cesm/SCRIPgrid_1x1pt_brazil_nomask_c110308.nc'),
+    'scrip-point': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_1x1pt_brazil_nomask_c110308.nc'),
                         'etype': 'SCRIP'}}
 WD = os.path.join('/tmp/cesm-manip')
-MPI_PROCS = 1
+MPI_PROCS = 4
 MPIEXEC = 'mpirun'
-OCLI_EXE = '/home/benkoziol/l/ocgis/src/ocli.py'
+OCLI_EXE = os.path.expanduser('~/l/ocgis/src/ocli.py')
 
 
 assert not os.path.exists(WD)

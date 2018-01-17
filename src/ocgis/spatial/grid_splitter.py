@@ -533,7 +533,7 @@ class GridSplitter(AbstractOcgisObject):
 
             # tdk: add flag to perform regridding when subsetting - should be false by default?
             # tdk: need method to pass in esmf_src_type
-            if self.genweights:
+            if self.genweights and len(vm.get_live_ranks_from_object(sub_src)) > 0:
                 vm.barrier()
                 srcfield = create_esmf_field(src_path, sub_src)
                 dstfield = create_esmf_field(dst_path, sub_dst)
@@ -642,10 +642,11 @@ class GridSplitter(AbstractOcgisObject):
 
 def esmf_func(func):
     def wrap(*args, **kwargs):
-        import ESMF
-        globals().update({'ESMF': ESMF})
-        # tdk: REMOVE
-        ESMF.Manager(debug=True)
+        if 'ESMF' not in globals():
+            import ESMF
+            globals().update({'ESMF': ESMF})
+            # tdk: REMOVE
+            ESMF.Manager(debug=True)
         return func(*args, **kwargs)
     return wrap
 

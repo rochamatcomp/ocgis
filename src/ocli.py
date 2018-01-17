@@ -44,7 +44,7 @@ def ocli():
               help='Base working directory for output intermediate files.')
 @click.option('--persist/--no_persist', default=True,
               help='If --persist, do not remove the working directory --wd following execution.')
-@click.option('--merge/--no_merge', default=False,
+@click.option('--merge/--no_merge', default=True,
               help='If --no_merge, do not merge weight file chunks into a global weight file.')
 @click.option('--spatial_subset/--no_spatial_subset', default=False,
               help='Subset the destination grid by the bounding box spatial extent of the source grid.')
@@ -111,15 +111,18 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
                           dst_grid_resolution=dst_resolution, buffer_value=buffer_distance, redistribute=True,
                           genweights=genweights)
 
+    # Write subsets and generate weights if requested in the grid splitter.
+    gs.write_subsets()
     # Create the global weight file.
     if merge:
         gs.create_merged_weight_file(weight)
-    elif not spatial_subset:
-        # Write the subsets. Only do this if this is not a merge operation.
-        gs.write_subsets()
-    else:
-        assert spatial_subset
-        assert not merge
+
+    # elif not spatial_subset:
+    #     # Write the subsets. Only do this if this is not a merge operation.
+    #     gs.write_subsets()
+    # else:
+    #     assert spatial_subset
+    #     assert not merge
 
     # Remove the working directory unless the persist flag is provided.
     if not persist:

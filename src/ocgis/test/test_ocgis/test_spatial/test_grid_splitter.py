@@ -344,7 +344,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         dst_grid.parent.write(dst_path)
 
         gs = GridSplitter(src_grid, dst_grid, (3, 3), check_contains=False, src_grid_resolution=10.,
-                          paths=self.fixture_paths)
+                          paths=self.fixture_paths, genweights=True)
         gs.write_subsets()
 
         # Load the grid splitter index file ----------------------------------------------------------------------------
@@ -360,14 +360,14 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
 
         # Create weight files for each subset --------------------------------------------------------------------------
 
-        for ii, sfn in enumerate(sv):
-            esp = os.path.join(self.current_dir_output, sfn)
-            edp = os.path.join(self.current_dir_output, dv[ii])
-            ewp = gs.create_full_path_from_template('wgt_template', index=ii + 1)
-            cmd = ['ESMF_RegridWeightGen', '-s', esp, '--src_type', 'UGRID', '--src_meshname',
-                   VariableName.UGRID_HOST_VARIABLE, '-d', edp, '--dst_type', 'GRIDSPEC', '-w', ewp, '--method',
-                   'conserve', '-r', '--no_log']
-            subprocess.check_call(cmd)
+        # for ii, sfn in enumerate(sv):
+        #     esp = os.path.join(self.current_dir_output, sfn)
+        #     edp = os.path.join(self.current_dir_output, dv[ii])
+        #     ewp = gs.create_full_path_from_template('wgt_template', index=ii + 1)
+        #     cmd = ['ESMF_RegridWeightGen', '-s', esp, '--src_type', 'UGRID', '--src_meshname',
+        #            VariableName.UGRID_HOST_VARIABLE, '-d', edp, '--dst_type', 'GRIDSPEC', '-w', ewp, '--method',
+        #            'conserve', '-r', '--no_log']
+        #     subprocess.check_call(cmd)
 
         # Merge weight files -------------------------------------------------------------------------------------------
 
@@ -423,7 +423,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         # Test a destination iterator.
         grid = mock.create_autospec(GridUnstruct)
         grid._gs_initialize_ = mock.Mock()
-        grid.resolution = 10.0
+        grid.resolution_max = 10.0
         grid.ndim = 1
         grid.wrapped_state = WrappedState.UNWRAPPED
         grid.crs = Spherical()
