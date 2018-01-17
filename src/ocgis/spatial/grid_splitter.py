@@ -12,6 +12,7 @@ from ocgis.collection.field import Field
 from ocgis.constants import GridSplitterConstants, RegriddingRole, Topology, DMK
 from ocgis.driver.request.core import RequestDataset
 from ocgis.spatial.grid import GridUnstruct, AbstractGrid
+from ocgis.util.helpers import esmf_func
 from ocgis.util.logging_ocgis import ocgis_lh
 from ocgis.variable.base import VariableCollection
 from ocgis.variable.geom import GeometryVariable
@@ -75,7 +76,7 @@ class GridSplitter(AbstractOcgisObject):
     :raises: ValueError
     """
 
-    def __init__(self, source, destination, nsplits_dst, paths=None, check_contains=False, allow_masked=True,
+    def __init__(self, source, destination, nsplits_dst=None, paths=None, check_contains=False, allow_masked=True,
                  src_grid_resolution=None, dst_grid_resolution=None, optimized_bbox_subset='auto', iter_dst=None,
                  buffer_value=None, redistribute=False, genweights=False, esmf_kwargs=None):
         # tdk: LAST: make nsplits_dst an optional parameter. this will make it easier to do a merge-only operation.
@@ -99,7 +100,7 @@ class GridSplitter(AbstractOcgisObject):
         self.esmf_kwargs = esmf_kwargs
 
         # Assert the split dimension matches the destination grid dimension.
-        if len(nsplits_dst) != self.dst_grid.ndim:
+        if nsplits_dst is not None and len(nsplits_dst) != self.dst_grid.ndim:
             raise ValueError('The number of splits must match the grid dimension count.')
 
         self.nsplits_dst = nsplits_dst
@@ -531,18 +532,10 @@ class GridSplitter(AbstractOcgisObject):
             # Increment the counter outside of the loop to avoid counting empty subsets.
             ctr += 1
 
-            # tdk: add flag to perform regridding when subsetting - should be false by default?
-            # tdk: need method to pass in esmf_src_type
+            # Generate an ESMF weights file if requested and at least one rank has data on it.
             if self.genweights and len(vm.get_live_ranks_from_object(sub_src)) > 0:
                 vm.barrier()
-                srcfield = create_esmf_field(src_path, sub_src)
-                dstfield = create_esmf_field(dst_path, sub_dst)
-                try:
-                    _ = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path, **self.esmf_kwargs)
-                finally:
-                    to_destroy = [srcfield.grid, srcfield, dstfield.grid, dstfield]
-                    for t in to_destroy:
-                        t.destroy()
+                self.write_esmf_weights(src_path, dst_path, wgt_path, src_grid=sub_src, dst_grid=sub_dst)
                 vm.barrier()
 
         # Global shapes require a VM global scope to collect.
@@ -602,6 +595,22 @@ class GridSplitter(AbstractOcgisObject):
 
         vm.barrier()
 
+    def write_esmf_weights(self, src_path, dst_path, wgt_path, src_grid=None, dst_grid=None):
+        # tdk: ORDER
+        # tdk: DOC
+        if src_grid is None:
+            src_grid = self.src_grid
+        if dst_grid is None:
+            dst_grid = self.dst_grid
+        srcfield = create_esmf_field(src_path, src_grid)
+        dstfield = create_esmf_field(dst_path, dst_grid)
+        try:
+            _ = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path, **self.esmf_kwargs)
+        finally:
+            to_destroy = [srcfield.grid, srcfield, dstfield.grid, dstfield]
+            for t in to_destroy:
+                t.destroy()
+
     def _gs_remap_weight_variable_(self, ii, wvn, odata, src_indices, dst_indices, ifile, gidx,
                                    split_grids_directory=None):
         if wvn == 'S':
@@ -638,17 +647,6 @@ class GridSplitter(AbstractOcgisObject):
             odata = oindices[odata - 1]
 
         return odata
-
-
-def esmf_func(func):
-    def wrap(*args, **kwargs):
-        if 'ESMF' not in globals():
-            import ESMF
-            globals().update({'ESMF': ESMF})
-            # tdk: REMOVE
-            ESMF.Manager(debug=True)
-        return func(*args, **kwargs)
-    return wrap
 
 
 @esmf_func

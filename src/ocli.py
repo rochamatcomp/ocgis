@@ -28,7 +28,7 @@ def ocli():
 @click.option('-n', '--nchunks_dst',
               help='Single integer or sequence defining the chunking decomposition for the destination grid.')
 @click.option('-w', '--weight', required=False, type=click.Path(exists=False, dir_okay=False),
-              help='Path to the output global weight file or prefix for the weight file.')
+              help='Path to the output global weight file.')
 @click.option('--esmf_src_type', type=str, nargs=1, default='GRIDSPEC',
               help='ESMF source grid type.')
 @click.option('--esmf_dst_type', type=str, nargs=1, default='GRIDSPEC',
@@ -55,15 +55,15 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
     # tdk: LAST: RENAME: to ESMPy_RegridWeightGen?
     ocgis.env.configure_logging()
 
-    if not spatial_subset:
-        if nchunks_dst is None:
-            raise ValueError("'nchunks_dst' may not be None if --no_spatial_subset")
+    if not spatial_subset and nchunks_dst is not None:
         # Format the chunking decomposition from its string representation.
         if ',' in nchunks_dst:
             nchunks_dst = nchunks_dst.split(',')
         else:
             nchunks_dst = [nchunks_dst]
         nchunks_dst = tuple([int(ii) for ii in nchunks_dst])
+    if merge and weight is None:
+        raise ValueError('"weight" must be a valid path if --merge')
 
     # Create the source and destination request datasets.
     rd_src = create_request_dataset(source, esmf_src_type)
@@ -71,52 +71,57 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
 
     # Make a temporary working directory is one is not provided by the client. Only do this if we are writing subsets
     # and it is not a merge only operation.
-    if not merge:
-        if wd is None:
-            if ocgis.vm.rank == 0:
-                wd = tempfile.mkdtemp(prefix='ocgis_cesm_manip_', dir=os.getcwd())
-            wd = ocgis.vm.bcast(wd)
-        else:
-            if ocgis.vm.rank == 0:
-                # The working directory must not exist to proceed.
-                if os.path.exists(wd):
-                    raise ValueError("Working directory 'wd' must not exist.")
-                else:
-                    # Make the working directory nesting as needed.
-                    os.makedirs(wd)
-            ocgis.vm.barrier()
+    if wd is None:
+        if ocgis.vm.rank == 0:
+            wd = tempfile.mkdtemp(prefix='ocgis_cesm_manip_', dir=os.getcwd())
+        wd = ocgis.vm.bcast(wd)
+    else:
+        if ocgis.vm.rank == 0:
+            # The working directory must not exist to proceed.
+            if os.path.exists(wd):
+                raise ValueError("Working directory 'wd' must not exist.")
+            else:
+                # Make the working directory nesting as needed.
+                os.makedirs(wd)
+        ocgis.vm.barrier()
 
     # tdk: need option to spatially subset and apply weights
     # Execute a spatial subset if requested.
+    paths = None
     if spatial_subset:
         # tdk: HACK: this is sensitive and should be replaced with more robust code. there is also an opportunity to simplify subsetting by incorporating the spatial subset operation object into subsetting itself.
         src_field = rd_src.create_field()
         dst_field = rd_dst.create_field()
         sso = SpatialSubsetOperation(dst_field)
         subset_geom = GeometryVariable.from_shapely(box(*src_field.grid.extent_global), crs=src_field.crs, is_bbox=True)
-        sub_dst = sso.get_spatial_subset('intersects', subset_geom, buffer_value=2.*dst_field.grid.resolution,
+        sub_dst = sso.get_spatial_subset('intersects', subset_geom, buffer_value=2. * dst_field.grid.resolution_max,
                                          optimized_bbox_subset=True)
         # tdk: should this be a parameter?
-        sub_dst.write(os.path.join(wd, 'spatial_subset.nc'))
+        spatial_subset_path = os.path.join(wd, 'spatial_subset.nc')
+        sub_dst.write(spatial_subset_path)
         # tdk: /hack
     # Only split grids if a spatial subset is not requested.
     else:
-        # Update the paths to use for the grid cesm_manip.
+        # Update the paths to use for the grid.
         paths = {'wd': wd}
-        # If we are not merging the chunked weight files, the weight string value is the string template to use for the
-        # output weight files.
-        if not merge and weight is not None:
-            paths['wgt_template'] = weight
 
-        gs = GridSplitter(rd_src, rd_dst, nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
-                          dst_grid_resolution=dst_resolution, buffer_value=buffer_distance, redistribute=True,
-                          genweights=genweights)
+    # Create the chunked regridding object. This is used for both chunked regridding and a regrid with a spatial subset.
+    gs = GridSplitter(rd_src, rd_dst, nsplits_dst=nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
+                      dst_grid_resolution=dst_resolution, buffer_value=buffer_distance, redistribute=True,
+                      genweights=genweights)
 
     # Write subsets and generate weights if requested in the grid splitter.
     # tdk: need a weight only option; currently subsets are always written and so is the merged weight file
-    gs.write_subsets()
-    # Create the global weight file.
-    if merge:
+    if not spatial_subset and nchunks_dst is not None:
+        gs.write_subsets()
+    else:
+        if spatial_subset:
+            source = spatial_subset_path
+        gs.write_esmf_weights(source, destination, weight)
+
+    # Create the global weight file. This does not apply to spatial subsets because there will always be one weight
+    # file.
+    if merge and not spatial_subset:
         gs.create_merged_weight_file(weight)
 
     # elif not spatial_subset:

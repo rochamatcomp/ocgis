@@ -2,7 +2,6 @@ import os
 import subprocess
 from unittest import SkipTest
 
-import ESMF
 import mock
 import numpy as np
 from click.testing import CliRunner
@@ -35,7 +34,7 @@ class Test(TestBase):
 
         poss.source = [source]
         poss.destination = [destination]
-        poss.nchunks_dst = ['1,1', '1']
+        poss.nchunks_dst = ['1,1', '1', '__exclude__']
         poss.esmf_src_type = ['__exclude__', 'GRIDSPEC']
         poss.esmf_dst_type = ['__exclude__', 'GRIDSPEC']
         poss.src_resolution = ['__exclude__', '1.0']
@@ -43,7 +42,7 @@ class Test(TestBase):
         poss.buffer_distance = ['__exclude__', '3.0']
         poss.wd = ['__exclude__', self.get_temporary_file_path('wd')]
         poss.no_persist = ['__exclude__', '__include__']
-        poss.merge = ['__exclude__', '__include__']
+        poss.no_merge = ['__exclude__', '__include__']
 
         return poss
 
@@ -102,7 +101,8 @@ class Test(TestBase):
             raise SkipTest('ocgis.vm.size not in [1, 2]')
 
         poss_weight = {'filename': self.get_temporary_file_path('weights.nc'),
-                       'prefix': self.get_temporary_file_path('weight_chunk_')}
+                       # 'prefix': self.get_temporary_file_path('weight_chunk_')
+                       }
 
         m_mkdtemp.return_value = 'mkdtemp return value'
 
@@ -118,37 +118,36 @@ class Test(TestBase):
                 if v2 != '__include__':
                     cli_args.append(v2)
 
-            if 'merge' in new_poss:
+            # Add the output weight filename if requested.
+            if 'no_merge' not in new_poss:
                 weight = poss_weight['filename']
-            else:
-                weight = poss_weight['prefix']
-            new_poss['weight'] = weight
-            cli_args.extend(['--weight', weight])
+                new_poss['weight'] = weight
+                cli_args.extend(['--weight', weight])
 
-            # print cli_args
+            print(cli_args)
             runner = CliRunner()
-            result = runner.invoke(ocli, args=cli_args)
+            result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
             self.assertEqual(result.exit_code, 0)
 
             mGridSplitter.assert_called_once()
             instance = mGridSplitter.return_value
             call_args = mGridSplitter.call_args
 
-            if k['wd'] == '__exclude__' and 'merge' not in new_poss:
+            if k['wd'] == '__exclude__':
                 actual = call_args[1]['paths']['wd']
                 self.assertEqual(actual, m_mkdtemp.return_value)
 
-            if 'merge' in new_poss:
+            if 'no_merge' not in new_poss:
                 instance.create_merged_weight_file.assert_called_once_with(new_poss['weight'])
             else:
-                self.assertEqual(call_args[1]['paths']['wgt_template'], new_poss['weight'])
                 instance.create_merged_weight_file.assert_not_called()
+            if new_poss.get('nchunks_dst') is not None:
                 instance.write_subsets.assert_called_once()
 
             if k['nchunks_dst'] == '1,1':
-                self.assertEqual(call_args[0][2], (1, 1))
-            else:
-                self.assertEqual(call_args[0][2], (1,))
+                self.assertEqual(call_args[1]['nsplits_dst'], (1, 1))
+            elif k['nchunks_dst'] == '1':
+                self.assertEqual(call_args[1]['nsplits_dst'], (1,))
 
             self.assertEqual(mRequestDataset.call_count, 2)
 
