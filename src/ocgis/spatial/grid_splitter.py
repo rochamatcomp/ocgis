@@ -712,4 +712,5 @@ def global_grid_shape(grid):
 
 
 def is_unstructured(target):
+    # tdk: this should use target.is_isomorphic?
     return isinstance(target, GridUnstruct)

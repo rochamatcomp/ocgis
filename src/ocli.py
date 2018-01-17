@@ -86,6 +86,7 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
                     os.makedirs(wd)
             ocgis.vm.barrier()
 
+    # tdk: need option to spatially subset and apply weights
     # Execute a spatial subset if requested.
     if spatial_subset:
         # tdk: HACK: this is sensitive and should be replaced with more robust code. there is also an opportunity to simplify subsetting by incorporating the spatial subset operation object into subsetting itself.
@@ -112,6 +113,7 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
                           genweights=genweights)
 
     # Write subsets and generate weights if requested in the grid splitter.
+    # tdk: need a weight only option; currently subsets are always written and so is the merged weight file
     gs.write_subsets()
     # Create the global weight file.
     if merge:
