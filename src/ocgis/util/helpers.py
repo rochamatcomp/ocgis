@@ -1,3 +1,4 @@
+import datetime
 import itertools
 import os
 import sys
@@ -7,7 +8,6 @@ from copy import deepcopy
 from pprint import pprint
 from tempfile import mkdtemp
 
-import datetime
 import fiona
 import numpy as np
 import six
@@ -1359,13 +1359,3 @@ def iter_exploded_geometries(geom):
             yield element1
 
 
-def esmf_func(func):
-    def wrap(*args, **kwargs):
-        if 'ESMF' not in globals():
-            import ESMF
-            globals().update({'ESMF': ESMF})
-            # tdk: REMOVE
-            ESMF.Manager(debug=True)
-        return func(*args, **kwargs)
-
-    return wrap

@@ -19,7 +19,8 @@ DATA = {
                            'etype': 'SCRIP'},
     'scrip-point': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_1x1pt_brazil_nomask_c110308.nc'),
                         'etype': 'SCRIP'}}
-WD = os.path.join('/tmp/cesm-manip')
+WD = os.path.join('/home/benkoziol/htmp/cesm-manip')
+WEIGHT = os.path.join(WD, '01-global_weights.nc')
 MPI_PROCS = 4
 MPIEXEC = 'mpirun'
 OCLI_EXE = os.path.expanduser('~/l/ocgis/src/ocli.py')
@@ -29,7 +30,7 @@ assert not os.path.exists(WD)
 ocgis.env.configure_logging()
 
 
-def create_command(wd, key_src, key_dst, merge=False):
+def create_command(wd, key_src, key_dst, weight):
     cmd = [MPIEXEC, '-n', str(MPI_PROCS), sys.executable, OCLI_EXE, 'cesm_manip']
     dsrc = DATA[key_src]
     ddst = DATA[key_dst]
@@ -37,17 +38,16 @@ def create_command(wd, key_src, key_dst, merge=False):
     cmd.extend(['--source', dsrc['path'], '--esmf_src_type', dsrc['etype']])
     cmd.extend(['--destination', ddst['path'], '--esmf_dst_type', ddst['etype'], '--nchunks_dst', str(ddst['nchunks_dst'])])
     cmd.extend(['--wd', wd])
+    cmd.extend(['--weight', weight])
 
     return cmd
 
 
 if __name__ == '__main__':
-    cmd = create_command(WD, 'ugrid', 'scrip-struct')
+    cmd = create_command(WD, 'ugrid', 'scrip-struct', WEIGHT)
 
     #tdk: REMOVE
-    print(cmd)
-    print ' '.join(cmd)
-    print(cmd)
+    print(' '.join(cmd))
 
     subprocess.check_call(cmd)
 

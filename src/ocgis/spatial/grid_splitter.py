@@ -11,8 +11,8 @@ from ocgis.base import AbstractOcgisObject
 from ocgis.collection.field import Field
 from ocgis.constants import GridSplitterConstants, RegriddingRole, Topology, DMK
 from ocgis.driver.request.core import RequestDataset
+from ocgis.spatial.geomc import AbstractGeometryCoordinates
 from ocgis.spatial.grid import GridUnstruct, AbstractGrid
-from ocgis.util.helpers import esmf_func
 from ocgis.util.logging_ocgis import ocgis_lh
 from ocgis.variable.base import VariableCollection
 from ocgis.variable.geom import GeometryVariable
@@ -186,7 +186,7 @@ class GridSplitter(AbstractOcgisObject):
                     target_resolution = dst_grid_resolution
                 else:
                     target_resolution = src_grid_resolution
-                ret = 2. * target_resolution
+                ret = 3. * target_resolution
             except NotImplementedError:
                 # Unstructured grids do not have an associated resolution unless they are isomorphic.
                 if isinstance(self.src_grid, GridUnstruct) or isinstance(self.dst_grid, GridUnstruct):
@@ -407,16 +407,36 @@ class GridSplitter(AbstractOcgisObject):
             dst_box = None
             with vm.scoped_by_emptyable('extent_global', dst_grid_subset):
                 if not vm.is_null:
-                    if self.check_contains:
-                        dst_box = box(*dst_grid_subset.extent_global)
+                    # Use the extent of the polygon for determining the bounding box. This ensures conservative
+                    # regridding will be fully mapped.
+                    if isinstance(dst_grid_subset, AbstractGeometryCoordinates):
+                        target_grid = dst_grid_subset.parent.grid
+                    else:
+                        target_grid = dst_grid_subset
 
-                    # Use the envelope! A buffer returns "fancy" borders. We just want to expand the bounding box.
-                    extent_global = dst_grid_subset.parent.attrs.get('extent_global')
-                    if extent_global is None:
-                        extent_global = dst_grid_subset.extent_global
-                    sub_box = box(*extent_global)
-                    if buffer_value is not None:
-                        sub_box = sub_box.buffer(buffer_value).envelope
+                    abstractions_available = target_grid.abstractions_available
+                    if Topology.POLYGON in abstractions_available:
+                        original_abstraction = target_grid.abstraction
+                    else:
+                        original_abstraction = None
+
+                    try:
+                        if original_abstraction is not None:
+                            target_grid.abstraction = Topology.POLYGON
+
+                        if self.check_contains:
+                            dst_box = box(*target_grid.extent_global)
+
+                        # Use the envelope! A buffer returns "fancy" borders. We just want to expand the bounding box.
+                        extent_global = target_grid.parent.attrs.get('extent_global')
+                        if extent_global is None:
+                            extent_global = target_grid.extent_global
+                        sub_box = box(*extent_global)
+                        if buffer_value is not None:
+                            sub_box = sub_box.buffer(buffer_value).envelope
+                    finally:
+                        if original_abstraction is not None:
+                            target_grid.abstraction = original_abstraction
 
                     ocgis_lh(msg=str(sub_box.bounds), level=logging.DEBUG)
                 else:
@@ -647,6 +667,18 @@ class GridSplitter(AbstractOcgisObject):
             odata = oindices[odata - 1]
 
         return odata
+
+
+def esmf_func(func):
+    def wrap(*args, **kwargs):
+        if 'ESMF' not in globals():
+            import ESMF
+            globals().update({'ESMF': ESMF})
+            # tdk: REMOVE
+            ESMF.Manager(debug=True)
+        return func(*args, **kwargs)
+
+    return wrap
 
 
 @esmf_func

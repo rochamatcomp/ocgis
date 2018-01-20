@@ -55,7 +55,7 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
     # tdk: LAST: RENAME: to ESMPy_RegridWeightGen?
     ocgis.env.configure_logging()
 
-    if not spatial_subset and nchunks_dst is not None:
+    if nchunks_dst is not None:
         # Format the chunking decomposition from its string representation.
         if ',' in nchunks_dst:
             nchunks_dst = nchunks_dst.split(',')
@@ -66,8 +66,8 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
         raise ValueError('"weight" must be a valid path if --merge')
 
     # Create the source and destination request datasets.
-    rd_src = create_request_dataset(source, esmf_src_type)
-    rd_dst = create_request_dataset(destination, esmf_dst_type)
+    rd_src = _create_request_dataset_(source, esmf_src_type)
+    rd_dst = _create_request_dataset_(destination, esmf_dst_type)
 
     # Make a temporary working directory is one is not provided by the client. Only do this if we are writing subsets
     # and it is not a merge only operation.
@@ -89,16 +89,9 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
     # Execute a spatial subset if requested.
     paths = None
     if spatial_subset:
-        # tdk: HACK: this is sensitive and should be replaced with more robust code. there is also an opportunity to simplify subsetting by incorporating the spatial subset operation object into subsetting itself.
-        src_field = rd_src.create_field()
-        dst_field = rd_dst.create_field()
-        sso = SpatialSubsetOperation(dst_field)
-        subset_geom = GeometryVariable.from_shapely(box(*src_field.grid.extent_global), crs=src_field.crs, is_bbox=True)
-        sub_dst = sso.get_spatial_subset('intersects', subset_geom, buffer_value=2. * dst_field.grid.resolution_max,
-                                         optimized_bbox_subset=True)
         # tdk: should this be a parameter?
         spatial_subset_path = os.path.join(wd, 'spatial_subset.nc')
-        sub_dst.write(spatial_subset_path)
+        _write_spatial_subset_(rd_src, rd_dst, spatial_subset_path)
         # tdk: /hack
     # Only split grids if a spatial subset is not requested.
     else:
@@ -140,13 +133,7 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
     return 0
 
 
-@ocli.command(help='blah')
-def tester():
-    # tdk: remove me
-    print(ocgis.vm.size_global)
-
-
-def create_request_dataset(path, esmf_type):
+def _create_request_dataset_(path, esmf_type):
     edmap = {'GRIDSPEC': DriverKey.NETCDF_CF,
              'UGRID': DriverKey.NETCDF_UGRID,
              'SCRIP': DriverKey.NETCDF_SCRIP}
@@ -154,6 +141,17 @@ def create_request_dataset(path, esmf_type):
     # tdk: HACK: the abstraction target should be determine by is_isomorphic=True and point is available. this requires
     # tdk: HACK:  an is_isomorphic argument to be passed through the request dataset
     return RequestDataset(uri=path, driver=odriver, grid_abstraction='point')
+
+
+def _write_spatial_subset_(rd_src, rd_dst, spatial_subset_path):
+    # tdk: HACK: this is sensitive and should be replaced with more robust code. there is also an opportunity to simplify subsetting by incorporating the spatial subset operation object into subsetting itself.
+    src_field = rd_src.create_field()
+    dst_field = rd_dst.create_field()
+    sso = SpatialSubsetOperation(dst_field)
+    subset_geom = GeometryVariable.from_shapely(box(*src_field.grid.extent_global), crs=src_field.crs, is_bbox=True)
+    sub_dst = sso.get_spatial_subset('intersects', subset_geom, buffer_value=2. * dst_field.grid.resolution_max,
+                                     optimized_bbox_subset=True)
+    sub_dst.write(spatial_subset_path)
 
 
 if __name__ == '__main__':

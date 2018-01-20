@@ -43,6 +43,7 @@ class Test(TestBase):
         poss.wd = ['__exclude__', self.get_temporary_file_path('wd')]
         poss.no_persist = ['__exclude__', '__include__']
         poss.no_merge = ['__exclude__', '__include__']
+        poss.spatial_subset = ['__exclude__', '__include__']
 
         return poss
 
@@ -90,13 +91,15 @@ class Test(TestBase):
         result = runner.invoke(ocli)
         self.assertEqual(result.exit_code, 0)
 
+    @mock.patch('ocli._write_spatial_subset_')
     @mock.patch('os.makedirs')
     @mock.patch('shutil.rmtree')
     @mock.patch('tempfile.mkdtemp')
     @mock.patch('ocli.GridSplitter')
     @mock.patch('ocli.RequestDataset')
     @attr('mpi')
-    def test_system_mock_combinations(self, mRequestDataset, mGridSplitter, m_mkdtemp, m_rmtree, m_makedirs):
+    def test_system_mock_combinations(self, mRequestDataset, mGridSplitter, m_mkdtemp, m_rmtree, m_makedirs,
+                                      m_write_spatial_subset):
         if ocgis.vm.size not in [1, 2]:
             raise SkipTest('ocgis.vm.size not in [1, 2]')
 
@@ -124,7 +127,7 @@ class Test(TestBase):
                 new_poss['weight'] = weight
                 cli_args.extend(['--weight', weight])
 
-            print(cli_args)
+            # print(cli_args)
             runner = CliRunner()
             result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
             self.assertEqual(result.exit_code, 0)
@@ -133,15 +136,15 @@ class Test(TestBase):
             instance = mGridSplitter.return_value
             call_args = mGridSplitter.call_args
 
-            if k['wd'] == '__exclude__':
+            if k['wd'] == '__exclude__' and 'spatial_subset' not in new_poss:
                 actual = call_args[1]['paths']['wd']
                 self.assertEqual(actual, m_mkdtemp.return_value)
 
-            if 'no_merge' not in new_poss:
+            if 'no_merge' not in new_poss and 'spatial_subset' not in new_poss:
                 instance.create_merged_weight_file.assert_called_once_with(new_poss['weight'])
             else:
                 instance.create_merged_weight_file.assert_not_called()
-            if new_poss.get('nchunks_dst') is not None:
+            if new_poss.get('nchunks_dst') is not None and 'spatial_subset' not in new_poss:
                 instance.write_subsets.assert_called_once()
 
             if k['nchunks_dst'] == '1,1':
@@ -174,7 +177,13 @@ class Test(TestBase):
             else:
                 m_rmtree.assert_not_called()
 
-            mocks = [mRequestDataset, mGridSplitter, m_mkdtemp, m_rmtree, m_makedirs]
+            # Test ESMF weight writing is called directly with a spatial subset.
+            if 'spatial_subset' in new_poss:
+                m_write_spatial_subset.assert_called_once()
+            else:
+                m_write_spatial_subset.assert_not_called()
+
+            mocks = [mRequestDataset, mGridSplitter, m_mkdtemp, m_rmtree, m_makedirs, m_write_spatial_subset]
             for m in mocks:
                 m.reset_mock()
 
