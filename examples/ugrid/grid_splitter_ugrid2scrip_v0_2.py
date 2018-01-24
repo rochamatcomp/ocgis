@@ -19,9 +19,9 @@ DATA = {
                            'etype': 'SCRIP'},
     'scrip-point': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_1x1pt_brazil_nomask_c110308.nc'),
                         'etype': 'SCRIP'}}
-WD = os.path.join('/home/benkoziol/htmp/cesm-manip')
+WD = os.path.join(os.path.expanduser('~/htmp/cesm-manip'))
 WEIGHT = os.path.join(WD, '01-global_weights.nc')
-MPI_PROCS = 4
+MPI_PROCS = 36
 MPIEXEC = 'mpirun'
 OCLI_EXE = os.path.expanduser('~/l/ocgis/src/ocli.py')
 

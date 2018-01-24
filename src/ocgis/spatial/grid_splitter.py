@@ -491,7 +491,8 @@ class GridSplitter(AbstractOcgisObject):
                         src_grid_subset = src_grid_subset.reduce_global()
                         ocgis_lh(logger='grid_splitter', msg='finished reduce_global', level=logging.DEBUG)
                 else:
-                    src_grid_subset = VariableCollection(is_empty=True)
+                    pass
+                    # src_grid_subset = VariableCollection(is_empty=True)
 
                 if src_grid_subset.is_empty:
                     src_grid_slice = None
@@ -624,12 +625,14 @@ class GridSplitter(AbstractOcgisObject):
             dst_grid = self.dst_grid
         srcfield = create_esmf_field(src_path, src_grid)
         dstfield = create_esmf_field(dst_path, dst_grid)
+        regrid = None
         try:
-            _ = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path, **self.esmf_kwargs)
+            regrid = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path, **self.esmf_kwargs)
         finally:
-            to_destroy = [srcfield.grid, srcfield, dstfield.grid, dstfield]
+            to_destroy = [regrid, srcfield.grid, srcfield, dstfield.grid, dstfield]
             for t in to_destroy:
-                t.destroy()
+                if t is not None:
+                    t.destroy()
 
     def _gs_remap_weight_variable_(self, ii, wvn, odata, src_indices, dst_indices, ifile, gidx,
                                    split_grids_directory=None):
