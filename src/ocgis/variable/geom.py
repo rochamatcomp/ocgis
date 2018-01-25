@@ -1115,8 +1115,9 @@ class GeometryVariable(AbstractSpatialVariable):
         lself.parent.write(*args, **kwargs)
 
     def _get_extent_(self):
-        tkk
-        raise NotImplementedError
+        if self.size > 1:
+            raise RequestableFeature('Extent not supported for more than one geometry.')
+        return self.get_value().flatten()[0].bounds
 
 
 def get_masking_slice(intersects_mask_value, target, apply_slice=True):
