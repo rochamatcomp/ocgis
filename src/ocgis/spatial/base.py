@@ -6,7 +6,7 @@ import six
 from pyproj import Proj, transform
 from shapely.geometry import box
 
-from ocgis import Variable, SourcedVariable, vm, constants
+from ocgis import Variable, SourcedVariable, vm
 from ocgis.base import raise_if_empty, is_field, AbstractInterfaceObject
 from ocgis.constants import KeywordArgument, VariableName, WrapAction, DMK
 from ocgis.exc import GridDeficientError
@@ -595,7 +595,7 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class AbstractSpatialVariable(SourcedVariable, AbstractOperationsSpatialObject):
+class AbstractSpatialVariable(AbstractOperationsSpatialObject, SourcedVariable):
     def __init__(self, **kwargs):
         kwargs = kwargs.copy()
         crs = kwargs.pop(KeywordArgument.CRS, 'auto')

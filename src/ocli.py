@@ -115,7 +115,11 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
     # Create the global weight file. This does not apply to spatial subsets because there will always be one weight
     # file.
     if merge and not spatial_subset:
-        gs.create_merged_weight_file(weight)
+        # Weight file merge only works in serial.
+        with ocgis.vm.scoped('weight file merge', [0]):
+            if not ocgis.vm.is_null:
+                gs.create_merged_weight_file(weight)
+        ocgis.vm.barrier()
 
     # elif not spatial_subset:
     #     # Write the subsets. Only do this if this is not a merge operation.

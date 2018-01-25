@@ -1115,6 +1115,7 @@ class GeometryVariable(AbstractSpatialVariable):
         lself.parent.write(*args, **kwargs)
 
     def _get_extent_(self):
+        tkk
         raise NotImplementedError
 
 

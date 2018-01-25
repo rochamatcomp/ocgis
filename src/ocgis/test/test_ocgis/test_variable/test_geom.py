@@ -804,6 +804,15 @@ class TestGeometryVariable(AbstractTestInterface, FixturePolygonWithHole):
         with self.assertRaises(RequestableFeature):
             GeometryVariable.prepare(gvar)
 
+    def test_tdk(self):
+        p1 = wkt.loads(
+            'Polygon((0.00646790955215693 52.80651473999023438, 359.992095947265625 52.803985595703125, 359.996246337890625 52.79539871215820312, 0.01059243362396955 52.7979278564453125, 0.00646790955215693 52.80651473999023438))')
+        p2 = wkt.loads(
+            'Polygon((0.0023414078168571 52.81510543823242188, 359.98797607421875 52.8125762939453125, 359.992095947265625 52.803985595703125, 0.00646790955215693 52.80651473999023438, 0.0023414078168571 52.81510543823242188))')
+
+        gv = GeometryVariable(name='geom', value=p1, crs=Spherical(), dimensions='ngeom')
+        ext = gv.extent
+
     def test_unwrap(self):
         geom = box(195, -40, 225, -30)
         gvar = GeometryVariable(name='geoms', value=geom, crs=Spherical(), dimensions='geoms')
