@@ -619,6 +619,7 @@ class GridSplitter(AbstractOcgisObject):
     def write_esmf_weights(self, src_path, dst_path, wgt_path, src_grid=None, dst_grid=None):
         # tdk: ORDER
         # tdk: DOC
+        assert wgt_path is not None
         if src_grid is None:
             src_grid = self.src_grid
         if dst_grid is None:

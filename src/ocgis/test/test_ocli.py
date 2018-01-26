@@ -17,6 +17,7 @@ from ocli import ocli
 
 
 #tdk: modify nose testing implementation to not load this file? how to deal with click?
+# tdk: all these tests are for cesm_manip and should be cataloged as such
 
 @attr('cli')
 class Test(TestBase):
@@ -186,6 +187,20 @@ class Test(TestBase):
             mocks = [mRequestDataset, mGridSplitter, m_mkdtemp, m_rmtree, m_makedirs, m_write_spatial_subset]
             for m in mocks:
                 m.reset_mock()
+
+    def test_cesm_manip_merged_weight_file_in_working_directory(self):
+        # tdk: ORDER
+        flags = self.fixture_flags_good()
+
+        source = flags['source'][0]
+        destination = flags['destination'][0]
+        wd = os.path.join(self.current_dir_output, 'chunks')
+        weight = os.path.join(wd, 'weights.nc')
+
+        runner = CliRunner()
+        cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--wd', wd, '--weight', weight]
+        with self.assertRaises(ValueError):
+            _ = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
 
     def assertWeightFilesEquivalent(self, global_weights_filename, merged_weights_filename):
         # tdk: this is duplicated in TestGridSplitter. find way to remove duplicate code.
@@ -383,12 +398,12 @@ class Test(TestBase):
             self.assertWeightFilesEquivalent(esmf_weights_path, merged_weights)
 
     def test_cesm_manip_spatial_subset(self):
-        dst_grid = create_gridxy_global()
+        dst_grid = create_gridxy_global(crs=Spherical())
         dst_field = create_exact_field(dst_grid, 'foo')
 
-        xvar = Variable(name='x', value=[-90.], dimensions='xdim')
-        yvar = Variable(name='y', value=[40.],  dimensions='ydim')
-        src_grid = Grid(x=xvar, y=yvar)
+        xvar = Variable(name='x', value=[-90., -80.], dimensions='xdim')
+        yvar = Variable(name='y', value=[40., 50.], dimensions='ydim')
+        src_grid = Grid(x=xvar, y=yvar, crs=Spherical())
 
         if ocgis.vm.rank == 0:
             source = self.get_temporary_file_path('source.nc')
@@ -404,17 +419,21 @@ class Test(TestBase):
         destination = ocgis.vm.bcast(destination)
         dst_field.write(destination)
 
-        runner = CliRunner()
         wd = os.path.join(self.current_dir_output, 'chunks')
-        cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--wd', wd, '--spatial_subset']
+        weight = os.path.join(self.current_dir_output, 'weights.nc')
+
+        runner = CliRunner()
+        cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--wd', wd, '--spatial_subset',
+                    '--weight', weight]
         result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
 
         dst_path = os.path.join(wd, 'spatial_subset.nc')
 
+        self.assertTrue(os.path.exists(weight))
         actual = RequestDataset(uri=dst_path).create_field()
         actual_ymean = actual.grid.get_value_stacked()[0].mean()
         actual_xmean = actual.grid.get_value_stacked()[1].mean()
-        self.assertEqual(actual_ymean, 40.)
-        self.assertEqual(actual_xmean, -90.)
-        self.assertEqual(actual.grid.shape, (4, 4))
+        self.assertEqual(actual_ymean, 45.)
+        self.assertEqual(actual_xmean, -85.)
+        self.assertEqual(actual.grid.shape, (16, 16))

@@ -62,12 +62,11 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
         else:
             nchunks_dst = [nchunks_dst]
         nchunks_dst = tuple([int(ii) for ii in nchunks_dst])
-    if merge and weight is None:
-        raise ValueError('"weight" must be a valid path if --merge')
-
-    # Create the source and destination request datasets.
-    rd_src = _create_request_dataset_(source, esmf_src_type)
-    rd_dst = _create_request_dataset_(destination, esmf_dst_type)
+    if merge:
+        if not spatial_subset and weight is None:
+            raise ValueError('"weight" must be a valid path if --merge')
+    if spatial_subset and genweights and weight is None:
+        raise ValueError('"weight" must be a valid path if --genweights')
 
     # Make a temporary working directory is one is not provided by the client. Only do this if we are writing subsets
     # and it is not a merge only operation.
@@ -84,6 +83,15 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
                 # Make the working directory nesting as needed.
                 os.makedirs(wd)
         ocgis.vm.barrier()
+
+    if merge and not spatial_subset or (spatial_subset and genweights):
+        if _is_subdir_(wd, weight):
+            raise ValueError(
+                'Merge weight file path must not in the working directory. It may get unintentionally deleted with the --no_persist flag.')
+
+    # Create the source and destination request datasets.
+    rd_src = _create_request_dataset_(source, esmf_src_type)
+    rd_dst = _create_request_dataset_(destination, esmf_dst_type)
 
     # tdk: need option to spatially subset and apply weights
     # Execute a spatial subset if requested.
@@ -110,7 +118,8 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
     else:
         if spatial_subset:
             source = spatial_subset_path
-        gs.write_esmf_weights(source, destination, weight)
+        if genweights:
+            gs.write_esmf_weights(source, destination, weight)
 
     # Create the global weight file. This does not apply to spatial subsets because there will always be one weight
     # file.
@@ -147,13 +156,21 @@ def _create_request_dataset_(path, esmf_type):
     return RequestDataset(uri=path, driver=odriver, grid_abstraction='point')
 
 
+def _is_subdir_(path, potential_subpath):
+    # https://stackoverflow.com/questions/3812849/how-to-check-whether-a-directory-is-a-sub-directory-of-another-directory#18115684
+    path = os.path.realpath(path)
+    potential_subpath = os.path.realpath(potential_subpath)
+    relative = os.path.relpath(path, potential_subpath)
+    return not relative.startswith(os.pardir + os.sep)
+
+
 def _write_spatial_subset_(rd_src, rd_dst, spatial_subset_path):
     # tdk: HACK: this is sensitive and should be replaced with more robust code. there is also an opportunity to simplify subsetting by incorporating the spatial subset operation object into subsetting itself.
     src_field = rd_src.create_field()
     dst_field = rd_dst.create_field()
     sso = SpatialSubsetOperation(dst_field)
     subset_geom = GeometryVariable.from_shapely(box(*src_field.grid.extent_global), crs=src_field.crs, is_bbox=True)
-    sub_dst = sso.get_spatial_subset('intersects', subset_geom, buffer_value=2. * dst_field.grid.resolution_max,
+    sub_dst = sso.get_spatial_subset('intersects', subset_geom, buffer_value=3. * dst_field.grid.resolution_max,
                                      optimized_bbox_subset=True)
     sub_dst.write(spatial_subset_path)
 
