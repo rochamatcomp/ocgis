@@ -1,6 +1,8 @@
 import logging
 import os
 
+# tdk: LAST: ESMF is an optional dependency
+import ESMF
 import netCDF4 as nc
 import numpy as np
 from shapely.geometry import box
@@ -17,6 +19,9 @@ from ocgis.util.logging_ocgis import ocgis_lh
 from ocgis.variable.base import VariableCollection
 from ocgis.variable.geom import GeometryVariable
 from ocgis.vmachine.mpi import redistribute_by_src_idx
+
+# tdk: LAST: change to debug = False
+manager = ESMF.Manager(debug=True)
 
 
 class GridSplitter(AbstractOcgisObject):
@@ -627,6 +632,7 @@ class GridSplitter(AbstractOcgisObject):
         srcfield = create_esmf_field(src_path, src_grid)
         dstfield = create_esmf_field(dst_path, dst_grid)
         regrid = None
+
         try:
             regrid = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path, **self.esmf_kwargs)
         finally:
@@ -685,7 +691,6 @@ def esmf_func(func):
     return wrap
 
 
-@esmf_func
 def update_esmf_kwargs(target):
     if 'regrid_method' not in target:
         target['regrid_method'] = ESMF.RegridMethod.CONSERVE
@@ -693,7 +698,6 @@ def update_esmf_kwargs(target):
         target['unmapped_action'] = ESMF.UnmappedAction.IGNORE
 
 
-@esmf_func
 def create_esmf_field(*args):
     grid = create_esmf_grid(*args)
     # tdk: need method to specify meshloc for fields
@@ -704,7 +708,6 @@ def create_esmf_field(*args):
     return ESMF.Field(grid=grid, meshloc=meshloc)
 
 
-@esmf_func
 def create_esmf_grid(filename, grid):
     # tdk: what to do with add_corner_stagger and is_sphere?
     filetype = grid.driver.get_esmf_filetype()
@@ -717,7 +720,6 @@ def create_esmf_grid(filename, grid):
     return ret
 
 
-@esmf_func
 def create_esmf_regrid(**kwargs):
     return ESMF.Regrid(**kwargs)
 

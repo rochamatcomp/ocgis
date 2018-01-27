@@ -37,7 +37,7 @@ def create_command(wd, key_src, key_dst, weight):
     cmd.extend(['--destination', ddst['path'], '--esmf_dst_type', ddst['etype'], '--nchunks_dst', str(ddst['nchunks_dst'])])
     cmd.extend(['--wd', wd])
     cmd.extend(['--weight', weight])
-    cmd.extend(['--no_genweights'])
+    # cmd.extend(['--no_genweights'])
 
     return cmd
 
