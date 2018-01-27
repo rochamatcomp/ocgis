@@ -54,13 +54,16 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
     @classmethod
     def _get_field_write_target_(cls, field):
         # tdk: CLEAN
-        # Update the grid size based on unique x/y values. In SCRIP, the coordinate values are duplicated in the
-        # coordinate vector.
-        ux = field.grid.x.shape[0]
-        uy = field.grid.y.shape[0]
         # ux = np.unique(sub['grid_center_lon'].get_value()).shape[0]
         # uy = np.unique(sub['grid_center_lat'].get_value()).shape[0]
-        field['grid_dims'].get_value()[:] = ux, uy
+
+        # Unstructured SCRIP has a value of 1 for the grid dimensions by default. Just leave it alone.
+        if field.dimensions['grid_rank'].size > 1:
+            # Update the grid size based on unique x/y values. In SCRIP, the coordinate values are duplicated in the
+            # coordinate vector.
+            ux = field.grid.x.shape[0]
+            uy = field.grid.y.shape[0]
+            field['grid_dims'].get_value()[:] = ux, uy
         return field
 
     @staticmethod

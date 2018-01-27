@@ -4,29 +4,27 @@ import sys
 
 import ocgis
 
-#tdk: FEATURE: need method to calculate nchunks_dst from a SCRIP grid
-#tdk: FEATURE: need method to calculate spatial resolution from bounds - useful for the 1pt case
-
 DATA = {
     'ugrid': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/UGRID_1km-merge-10min_HYDRO1K-merge-nomask_c130402.nc'),
-                  'nchunks_dst': 100,
-                  'etype': 'UGRID'},
+              'nchunks_dst': 100,
+              'etype': 'UGRID'},
     'scrip-struct': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/0.9x1.25_c110307.nc'),
-                         'nchunks_dst': 96,
-                         'etype': 'SCRIP'},
+                     'nchunks_dst': 96,
+                     'etype': 'SCRIP'},
     'scrip-unstruct': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_ne16np4_nomask_c110512.nc'),
-                           'nchunks_dst': 50,
-                           'etype': 'SCRIP'},
+                       'nchunks_dst': 50,
+                       'etype': 'SCRIP'},
     'scrip-point': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_1x1pt_brazil_nomask_c110308.nc'),
-                        'etype': 'SCRIP'}}
-WD = os.path.join(os.path.expanduser('~/htmp/cesm-manip'))
-WEIGHT = os.path.join(WD, '01-global_weights.nc')
-MPI_PROCS = 36
+                    'etype': 'SCRIP',
+                    'is_point': True}}
+BASEDIR = os.path.expanduser('~/htmp/cesm-manip')
+WD = os.path.join(BASEDIR, 'chunks')
+WEIGHT = os.path.join(BASEDIR, '01-global_weights.nc')
+MPI_PROCS = 16
 MPIEXEC = 'mpirun'
 OCLI_EXE = os.path.expanduser('~/l/ocgis/src/ocli.py')
 
-
-assert not os.path.exists(WD)
+assert not os.path.exists(BASEDIR)
 ocgis.env.configure_logging()
 
 
@@ -39,13 +37,13 @@ def create_command(wd, key_src, key_dst, weight):
     cmd.extend(['--destination', ddst['path'], '--esmf_dst_type', ddst['etype'], '--nchunks_dst', str(ddst['nchunks_dst'])])
     cmd.extend(['--wd', wd])
     cmd.extend(['--weight', weight])
-    # cmd.extend(['--no_genweights'])
+    cmd.extend(['--no_genweights'])
 
     return cmd
 
 
 if __name__ == '__main__':
-    cmd = create_command(WD, 'ugrid', 'scrip-struct', WEIGHT)
+    cmd = create_command(WD, 'ugrid', 'scrip-unstruct', WEIGHT)
 
     #tdk: REMOVE
     print(' '.join(cmd))
