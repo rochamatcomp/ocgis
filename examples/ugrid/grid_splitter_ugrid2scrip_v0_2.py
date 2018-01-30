@@ -3,6 +3,7 @@ import subprocess
 import sys
 
 import ocgis
+from ocgis.util.logging_ocgis import ocgis_lh
 
 DATA = {
     'ugrid': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/UGRID_1km-merge-10min_HYDRO1K-merge-nomask_c130402.nc'),
@@ -12,7 +13,7 @@ DATA = {
                      'nchunks_dst': 96,
                      'etype': 'SCRIP'},
     'scrip-unstruct': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_ne16np4_nomask_c110512.nc'),
-                       'nchunks_dst': 50,
+                       'nchunks_dst': 100,
                        'etype': 'SCRIP'},
     'scrip-point': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_1x1pt_brazil_nomask_c110308.nc'),
                     'etype': 'SCRIP',
@@ -23,6 +24,7 @@ WEIGHT = os.path.join(BASEDIR, '01-global_weights.nc')
 MPI_PROCS = 16
 MPIEXEC = 'mpirun'
 OCLI_EXE = os.path.expanduser('~/l/ocgis/src/ocli.py')
+ocgis.env.VERBOSE = True
 
 assert not os.path.exists(BASEDIR)
 ocgis.env.configure_logging()
@@ -43,12 +45,14 @@ def create_command(wd, key_src, key_dst, weight):
 
 
 if __name__ == '__main__':
+    ocgis_lh(logger='chunker', msg='starting!')
     cmd = create_command(WD, 'ugrid', 'scrip-unstruct', WEIGHT)
 
     #tdk: REMOVE
     print(' '.join(cmd))
 
     subprocess.check_call(cmd)
+    ocgis_lh(logger='chunker', msg='stopping!')
 
 # # rd = RequestDataset(DATA['ugrid'], driver='netcdf-ugrid')
 # # field = rd.create_field()

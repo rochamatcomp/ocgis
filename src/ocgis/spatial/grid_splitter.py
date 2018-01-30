@@ -629,17 +629,22 @@ class GridSplitter(AbstractOcgisObject):
             src_grid = self.src_grid
         if dst_grid is None:
             dst_grid = self.dst_grid
-        srcfield = create_esmf_field(src_path, src_grid)
-        dstfield = create_esmf_field(dst_path, dst_grid)
+        srcfield, srcgrid = create_esmf_field(src_path, src_grid)
+        dstfield, dstgrid = create_esmf_field(dst_path, dst_grid)
         regrid = None
 
         try:
             regrid = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path, **self.esmf_kwargs)
         finally:
-            to_destroy = [regrid, srcfield.grid, srcfield, dstfield.grid, dstfield]
+            to_destroy = [regrid, srcgrid, srcfield, dstgrid, dstfield]
             for t in to_destroy:
                 if t is not None:
                     t.destroy()
+            del regrid
+            del srcgrid
+            del srcfield
+            del dstgrid
+            del dstfield
 
     def _gs_remap_weight_variable_(self, ii, wvn, odata, src_indices, dst_indices, ifile, gidx,
                                    split_grids_directory=None):
@@ -705,7 +710,7 @@ def create_esmf_field(*args):
         meshloc = ESMF.MeshLoc.ELEMENT
     else:
         meshloc = None
-    return ESMF.Field(grid=grid, meshloc=meshloc)
+    return ESMF.Field(grid=grid, meshloc=meshloc), grid
 
 
 def create_esmf_grid(filename, grid):
