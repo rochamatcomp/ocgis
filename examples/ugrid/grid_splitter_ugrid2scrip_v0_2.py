@@ -13,7 +13,7 @@ DATA = {
                      'nchunks_dst': 96,
                      'etype': 'SCRIP'},
     'scrip-unstruct': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_ne16np4_nomask_c110512.nc'),
-                       'nchunks_dst': 100,
+                       'nchunks_dst': 50,
                        'etype': 'SCRIP'},
     'scrip-point': {'path': os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_1x1pt_brazil_nomask_c110308.nc'),
                     'etype': 'SCRIP',
@@ -21,7 +21,7 @@ DATA = {
 BASEDIR = os.path.expanduser('~/htmp/cesm-manip')
 WD = os.path.join(BASEDIR, 'chunks')
 WEIGHT = os.path.join(BASEDIR, '01-global_weights.nc')
-MPI_PROCS = 16
+MPI_PROCS = 36
 MPIEXEC = 'mpirun'
 OCLI_EXE = os.path.expanduser('~/l/ocgis/src/ocli.py')
 ocgis.env.VERBOSE = True
@@ -46,12 +46,15 @@ def create_command(wd, key_src, key_dst, weight):
 
 if __name__ == '__main__':
     ocgis_lh(logger='chunker', msg='starting!')
-    cmd = create_command(WD, 'ugrid', 'scrip-unstruct', WEIGHT)
 
-    #tdk: REMOVE
-    print(' '.join(cmd))
+    # key_dst = 'scrip-unstruct'
+    key_dst = 'scrip-struct'
+    cmd = create_command(WD, 'ugrid', key_dst, WEIGHT)
+
+    ocgis_lh(logger='chunker', msg=' '.join(cmd))
 
     subprocess.check_call(cmd)
+
     ocgis_lh(logger='chunker', msg='stopping!')
 
 # # rd = RequestDataset(DATA['ugrid'], driver='netcdf-ugrid')
