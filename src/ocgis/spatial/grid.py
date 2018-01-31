@@ -1038,6 +1038,7 @@ class GridUnstruct(AbstractGrid):
         return ret
 
     def reduce_global(self, *args, **kwargs):
+        # tdk: FEATURE: this should run on each abstraction in turn
         for a in self.abstractions_available.values():
             a = a.reduce_global(*args, **kwargs)
             return a.parent.grid

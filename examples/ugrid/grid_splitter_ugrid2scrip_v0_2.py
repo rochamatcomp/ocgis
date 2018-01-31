@@ -21,7 +21,7 @@ DATA = {
 BASEDIR = os.path.expanduser('~/htmp/cesm-manip')
 WD = os.path.join(BASEDIR, 'chunks')
 WEIGHT = os.path.join(BASEDIR, '01-global_weights.nc')
-MPI_PROCS = 36
+MPI_PROCS = 4
 MPIEXEC = 'mpirun'
 OCLI_EXE = os.path.expanduser('~/l/ocgis/src/ocli.py')
 ocgis.env.VERBOSE = True
@@ -30,15 +30,24 @@ assert not os.path.exists(BASEDIR)
 ocgis.env.configure_logging()
 
 
-def create_command(wd, key_src, key_dst, weight):
-    cmd = [MPIEXEC, '-n', str(MPI_PROCS), sys.executable, OCLI_EXE, 'cesm_manip']
+def create_command(wd, key_src, key_dst, weight, nprocs=MPI_PROCS):
     dsrc = DATA[key_src]
     ddst = DATA[key_dst]
 
+    is_point = ddst.get('is_point', False)
+    if is_point:
+        nprocs = 1
+
+    cmd = [MPIEXEC, '-n', str(nprocs), sys.executable, OCLI_EXE, 'cesm_manip']
+
     cmd.extend(['--source', dsrc['path'], '--esmf_src_type', dsrc['etype']])
-    cmd.extend(['--destination', ddst['path'], '--esmf_dst_type', ddst['etype'], '--nchunks_dst', str(ddst['nchunks_dst'])])
+    cmd.extend(['--destination', ddst['path'], '--esmf_dst_type', ddst['etype']])
     cmd.extend(['--wd', wd])
     cmd.extend(['--weight', weight])
+    if is_point:
+        cmd.append('--spatial_subset')
+    else:
+        cmd.extend(['--nchunks_dst', str(ddst['nchunks_dst'])])
     # cmd.extend(['--no_genweights'])
 
     return cmd
@@ -48,7 +57,8 @@ if __name__ == '__main__':
     ocgis_lh(logger='chunker', msg='starting!')
 
     # key_dst = 'scrip-unstruct'
-    key_dst = 'scrip-struct'
+    # key_dst = 'scrip-struct'
+    key_dst = 'scrip-point'
     cmd = create_command(WD, 'ugrid', key_dst, WEIGHT)
 
     ocgis_lh(logger='chunker', msg=' '.join(cmd))

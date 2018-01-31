@@ -168,11 +168,22 @@ def _write_spatial_subset_(rd_src, rd_dst, spatial_subset_path):
     # tdk: HACK: this is sensitive and should be replaced with more robust code. there is also an opportunity to simplify subsetting by incorporating the spatial subset operation object into subsetting itself.
     src_field = rd_src.create_field()
     dst_field = rd_dst.create_field()
-    sso = SpatialSubsetOperation(dst_field)
-    subset_geom = GeometryVariable.from_shapely(box(*src_field.grid.extent_global), crs=src_field.crs, is_bbox=True)
-    sub_dst = sso.get_spatial_subset('intersects', subset_geom, buffer_value=3. * dst_field.grid.resolution_max,
+    sso = SpatialSubsetOperation(src_field)
+    # print(dst_field.grid.extent_global)
+    # print(src_field.grid.resolution_max)
+    # tkk
+    subset_geom = GeometryVariable.from_shapely(box(*dst_field.grid.extent_global), crs=dst_field.crs, is_bbox=True)
+    sub_src = sso.get_spatial_subset('intersects', subset_geom, buffer_value=3. * src_field.grid.resolution_max,
                                      optimized_bbox_subset=True)
-    sub_dst.write(spatial_subset_path)
+
+    try:
+        print(sub_src.grid.parent.shapes)  # tdk:remove
+        sub_src.grid.reduce_global()
+        print(sub_src.grid.parent.shapes)  # tdk:remove
+    except AttributeError:
+        pass
+
+    sub_src.write(spatial_subset_path)
 
 
 if __name__ == '__main__':
