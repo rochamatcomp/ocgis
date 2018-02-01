@@ -106,7 +106,8 @@ class OcgisLogging(object):
                     dest_logger.exception(msg)
                     raise exc
 
-    def configure(self, to_file=None, to_stream=False, level=logging.INFO, callback=None, callback_level=logging.INFO):
+    def configure(self, to_file=None, to_stream=False, level=logging.INFO, callback=None, callback_level=logging.INFO,
+                  with_header=True):
         self.callback = callback
         self.callback_level = callback_level
 
@@ -146,13 +147,13 @@ class OcgisLogging(object):
             # Capture warnings if requested by the environment.
             logging.captureWarnings(env.SUPPRESS_WARNINGS)
 
-            # Insert the current software version into the logging file.
-            self.parent.log(logging.INFO, 'Initialized at {0} (UTC)'.format(datetime.datetime.utcnow()))
-            self.parent.log(logging.INFO, 'OpenClimateGIS v{0}'.format(ocgis.__release__))
-
-            # If we are debugging, print some additional information.
-            if self.level == logging.DEBUG:
-                self._log_versions_()
+            if with_header:
+                # Insert the current software version into the logging file.
+                self.parent.log(logging.INFO, 'Initialized at {0} (UTC)'.format(datetime.datetime.utcnow()))
+                self.parent.log(logging.INFO, 'OpenClimateGIS v{0}'.format(ocgis.__release__))
+                # If we are debugging, print some additional information.
+                if self.level == logging.DEBUG:
+                    self._log_versions_()
 
     @staticmethod
     def get_formatted_msg(msg, alias, ugid=None):

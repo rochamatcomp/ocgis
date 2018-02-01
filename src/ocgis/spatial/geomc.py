@@ -665,7 +665,7 @@ class AbstractGeometryCoordinates(AbstractXYZSpatialContainer):
         return ret
 
     def _get_dimensions_(self):
-        return (self.element_dim,)
+        return tuple(self.element_dim, )
 
     def _get_extent_(self):
         minx = self.x.get_value().min()

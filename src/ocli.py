@@ -5,14 +5,17 @@
 import os
 import shutil
 import tempfile
+from logging import DEBUG
 
 import click
 from shapely.geometry import box
 
 import ocgis
 from ocgis import RequestDataset, GridSplitter, GeometryVariable
-from ocgis.constants import DriverKey
+from ocgis.base import grid_abstraction_scope
+from ocgis.constants import DriverKey, Topology, GridSplitterConstants
 from ocgis.spatial.spatial_subset import SpatialSubsetOperation
+from ocgis.util.logging_ocgis import ocgis_lh
 
 
 @click.group()
@@ -53,7 +56,12 @@ def ocli():
 def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, src_resolution, dst_resolution,
                buffer_distance, wd, persist, merge, spatial_subset, genweights):
     # tdk: LAST: RENAME: to ESMPy_RegridWeightGen?
-    ocgis.env.configure_logging()
+
+    # tdk: REMOVE
+    ocgis.env.VERBOSE = True
+    ocgis.env.DEBUG = True
+    # tdk: /REMOVE
+    ocgis.env.configure_logging(with_header=False)
 
     if nchunks_dst is not None:
         # Format the chunking decomposition from its string representation.
@@ -169,19 +177,24 @@ def _write_spatial_subset_(rd_src, rd_dst, spatial_subset_path):
     src_field = rd_src.create_field()
     dst_field = rd_dst.create_field()
     sso = SpatialSubsetOperation(src_field)
-    # print(dst_field.grid.extent_global)
-    # print(src_field.grid.resolution_max)
-    # tkk
-    subset_geom = GeometryVariable.from_shapely(box(*dst_field.grid.extent_global), crs=dst_field.crs, is_bbox=True)
-    sub_src = sso.get_spatial_subset('intersects', subset_geom, buffer_value=3. * src_field.grid.resolution_max,
+
+    with grid_abstraction_scope(dst_field.grid, Topology.POLYGON):
+        dst_field_extent = dst_field.grid.extent_global
+
+    ocgis_lh(logger='ocli', msg=['src_field.grid.resolution_max', src_field.grid.resolution_max], level=DEBUG)
+    print
+    subset_geom = GeometryVariable.from_shapely(box(*dst_field_extent), crs=dst_field.crs, is_bbox=True)
+    sub_src = sso.get_spatial_subset('intersects', subset_geom,
+                                     buffer_value=GridSplitterConstants.BUFFER_RESOLUTION_MODIFIER * src_field.grid.resolution_max,
                                      optimized_bbox_subset=True)
 
+    # Try to reduce the coordinate indexing for unstructured grids.
     try:
-        print(sub_src.grid.parent.shapes)  # tdk:remove
-        sub_src.grid.reduce_global()
-        print(sub_src.grid.parent.shapes)  # tdk:remove
+        reduced = sub_src.grid.reduce_global()
     except AttributeError:
         pass
+    else:
+        sub_src = reduced.parent
 
     sub_src.write(spatial_subset_path)
 

@@ -147,7 +147,7 @@ class Environment(AbstractOcgisObject):
             if attr.on_change is not None:
                 attr.on_change()
 
-    def configure_logging(self):
+    def configure_logging(self, with_header=True):
         from ocgis.util.logging_ocgis import ocgis_lh
 
         # If file logging is enabled, check where or if the log should be written.
@@ -168,7 +168,7 @@ class Environment(AbstractOcgisObject):
         else:
             level = logging.INFO
         # This wraps the callback function with methods to capture the completion of major operations.
-        ocgis_lh.configure(to_file=to_file, to_stream=to_stream, level=level,
+        ocgis_lh.configure(to_file=to_file, to_stream=to_stream, level=level, with_header=with_header
                            # callback=progress, callback_level=level,
                            )
 

@@ -51,8 +51,10 @@ class Test(TestBase):
     def test_tdk_ugrid_subset(self):
         # tdk: REMOVE: this is a development-only test
         self.fail()
-        bbox = (-0.02836192562955318, -90.02836192562955, 358.7783619256295, 45.73516820835204)
+        # bbox = (-0.02836192562955318, -90.02836192562955, 358.7783619256295, 45.73516820835204)
+        bbox = (305., -7.0, 305., -7.0)
         bbox = box(*bbox)
+        bbox = bbox.buffer(0.5)
 
         path = '/home/benkoziol/l/data/bekozi-work/i49-ugrid-cesm/UGRID_1km-merge-10min_HYDRO1K-merge-nomask_c130402.nc'
 

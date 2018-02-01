@@ -7,9 +7,10 @@ import netCDF4 as nc
 import numpy as np
 from shapely.geometry import box
 
+import ocgis
 from ocgis import Dimension, vm
 from ocgis import Variable
-from ocgis.base import AbstractOcgisObject
+from ocgis.base import AbstractOcgisObject, grid_abstraction_scope
 from ocgis.collection.field import Field
 from ocgis.constants import GridSplitterConstants, RegriddingRole, Topology, DMK
 from ocgis.driver.request.core import RequestDataset
@@ -191,7 +192,7 @@ class GridSplitter(AbstractOcgisObject):
                     target_resolution = dst_grid_resolution
                 else:
                     target_resolution = src_grid_resolution
-                ret = 3. * target_resolution
+                ret = GridSplitterConstants.BUFFER_RESOLUTION_MODIFIER * target_resolution
             except NotImplementedError:
                 # Unstructured grids do not have an associated resolution unless they are isomorphic.
                 if isinstance(self.src_grid, GridUnstruct) or isinstance(self.dst_grid, GridUnstruct):
@@ -419,31 +420,20 @@ class GridSplitter(AbstractOcgisObject):
                     else:
                         target_grid = dst_grid_subset
 
-                    abstractions_available = target_grid.abstractions_available
-                    if Topology.POLYGON in abstractions_available:
-                        original_abstraction = target_grid.abstraction
-                    else:
-                        original_abstraction = None
-
-                    try:
-                        if original_abstraction is not None:
-                            target_grid.abstraction = Topology.POLYGON
-
-                        if self.check_contains:
-                            dst_box = box(*target_grid.extent_global)
-
-                        # Use the envelope! A buffer returns "fancy" borders. We just want to expand the bounding box.
-                        extent_global = target_grid.parent.attrs.get('extent_global')
-                        if extent_global is None:
+                    extent_global = target_grid.parent.attrs.get('extent_global')
+                    if extent_global is None:
+                        with grid_abstraction_scope(target_grid, Topology.POLYGON):
                             extent_global = target_grid.extent_global
-                        sub_box = box(*extent_global)
-                        if buffer_value is not None:
-                            sub_box = sub_box.buffer(buffer_value).envelope
-                    finally:
-                        if original_abstraction is not None:
-                            target_grid.abstraction = original_abstraction
 
-                    ocgis_lh(msg=str(sub_box.bounds), level=logging.DEBUG)
+                    if self.check_contains:
+                        dst_box = box(*target_grid.extent_global)
+
+                    sub_box = box(*extent_global)
+                    if buffer_value is not None:
+                        # Use the envelope! A buffer returns "fancy" borders. We just want to expand the bounding box.
+                        sub_box = sub_box.buffer(buffer_value).envelope
+
+                    ocgis_lh(msg=str(sub_box.bounds), level=logging.DEBUG, logger='grid_splitter')
                 else:
                     sub_box, dst_box = [None, None]
 
@@ -624,13 +614,16 @@ class GridSplitter(AbstractOcgisObject):
     def write_esmf_weights(self, src_path, dst_path, wgt_path, src_grid=None, dst_grid=None):
         # tdk: ORDER
         # tdk: DOC
+        ocgis_lh(logger='grid_splitter', msg='entering write_esmf_weights', level=logging.DEBUG)
         assert wgt_path is not None
         if src_grid is None:
             src_grid = self.src_grid
         if dst_grid is None:
             dst_grid = self.dst_grid
         srcfield, srcgrid = create_esmf_field(src_path, src_grid)
+        ocgis_lh(logger='grid_splitter', msg='finished creating source ESMPy field', level=logging.DEBUG)
         dstfield, dstgrid = create_esmf_field(dst_path, dst_grid)
+        ocgis_lh(logger='grid_splitter', msg='finished creating destination ESMPy field', level=logging.DEBUG)
         regrid = None
 
         try:
