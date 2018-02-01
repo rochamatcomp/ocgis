@@ -274,7 +274,8 @@ class AbstractSpatialContainer(AbstractContainer, AbstractOperationsSpatialObjec
         else:
             mask_variable = self.mask_variable
             if mask_variable is None:
-                mask_variable = create_grid_mask_variable(VariableName.SPATIAL_MASK, value, self.dimensions)
+                dimensions = self.dimensions
+                mask_variable = create_grid_mask_variable(VariableName.SPATIAL_MASK, value, dimensions)
                 self.parent.add_variable(mask_variable)
             else:
                 mask_variable.set_mask(value)

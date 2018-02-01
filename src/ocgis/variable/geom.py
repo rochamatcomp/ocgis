@@ -559,7 +559,6 @@ class GeometryVariable(AbstractSpatialVariable):
             if self.has_mask:
                 kwds[KeywordArgument.MASK] = self.get_mask()
             ret = klass(variables[0], variables[1], **kwds)
-
         else:
             raise RequestableFeature('This conversion target is not supported: {}'.format(target))
         return ret

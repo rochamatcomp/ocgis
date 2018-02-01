@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+
 # File for capturing stderr and stdout
 export OUT_FILE=test-ocgis.out
 
@@ -14,6 +15,8 @@ WTIME=900
 
 ########################################################################################################################
 
+cd ${OCGIS_DIR} || { echo "ERROR: Could not cd OCGIS_DIR: ${OCGIS_DIR}"; exit 1; }
+cd misc/sh || exit 1
 rm ${OUT_FILE}
 rm .noseids
 

@@ -3,9 +3,9 @@
 nps=(2 3 4 5 6 7 8)
 #nps=(6 7 8)
 
-tests=(../../src/ocgis/test)
+#tests=(../../src/ocgis/test)
 #tests=(/home/benkoziol/l/ocgis/src/ocgis/test/test_ocgis/test_spatial/test_grid_splitter.py)
-tests=(/home/benkoziol/l/ocgis/src/ocgis/test/test_ocgis/test_variable)
+tests=(${OCGIS_DIR}/src/ocgis/test/test_ocgis/test_variable)
 #tests=(/home/benkoziol/l/ocgis/src/ocgis/test/test_ocgis/test_vm)
 
 ########################################################################################################################
