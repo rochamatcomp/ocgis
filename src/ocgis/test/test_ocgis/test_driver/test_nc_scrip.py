@@ -1,4 +1,5 @@
 import itertools
+from unittest import SkipTest
 
 import numpy as np
 from mock import mock
@@ -53,12 +54,11 @@ class TestDriverScripNetcdf(TestBase, FixtureDriverScripNetcdf):
 
     def test_system_spatial_resolution(self):
         """Test spatial resolution is computed appropriately."""
+        raise SkipTest
         # tdk: REMOVE: this test is for development and can be taken away at the end
         path = '/mnt/e24fbd51-d3a4-44e5-82a5-0e20b3487199/data/bekozi-work/i49-ugrid-cesm/0.9x1.25_c110307.nc'
         rd = RequestDataset(path, driver=DriverKey.NETCDF_SCRIP)
         field = rd.create_field()
-        import ipdb;
-        ipdb.set_trace()
         self.assertEqual(field.driver.key, DriverKey.NETCDF_SCRIP)
         self.assertEqual(field.grid.driver.key, DriverKey.NETCDF_SCRIP)
 
@@ -150,32 +150,32 @@ class TestDriverScripNetcdf(TestBase, FixtureDriverScripNetcdf):
         dmap = d.create_dimension_map(meta)
         self.assertIsInstance(dmap, DimensionMap)
 
-        run_topo_test(self, dmap)
+        run_topo_tst(self, dmap)
 
         actual = dmap.get_property(DMK.IS_ISOMORPHIC)
         self.assertTrue(actual)
 
         field = d.create_field()
 
-        run_topo_test(self, field.dimension_map)
+        run_topo_tst(self, field.dimension_map)
         dmap = field.grid.dimension_map
-        run_topo_test(self, dmap)
+        run_topo_tst(self, dmap)
 
         self.assertEqual(field.crs, Spherical())
         self.assertEqual(field.driver.key, DriverKey.NETCDF_SCRIP)
         self.assertIsInstance(field.grid, GridUnstruct)
         desired = meta['dimensions']['grid_size']['size']
-        run_topo_test(self, field.grid.dimension_map)
+        run_topo_tst(self, field.grid.dimension_map)
         actual = field.grid.element_dim.size
-        run_topo_test(self, field.grid.dimension_map)
+        run_topo_tst(self, field.grid.dimension_map)
         self.assertEqual(desired, actual)
         self.assertTrue(field.grid.is_isomorphic)
         self.assertEqual(field.grid.abstraction, Topology.POLYGON)
 
-        run_topo_test(self, field.grid.dimension_map)
+        run_topo_tst(self, field.grid.dimension_map)
 
 
-def run_topo_test(obj, dmap):
+def run_topo_tst(obj, dmap):
     topo = dmap.get_topology(Topology.POLYGON)
     for k in [DMK.X, DMK.Y]:
         actual = topo.get_dimension(k)

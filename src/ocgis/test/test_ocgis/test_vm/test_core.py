@@ -111,6 +111,11 @@ class TestOcgVM(TestBase):
     @attr('mpi')
     def test_create_subcomm(self):
         vm = OcgVM()
+
+        if vm.size != 2:
+            raise SkipTest('vm.size != 2')
+
+        self.assertFalse(vm._is_dummy)
         vm.create_subcomm('test', [], is_current=True)
         self.assertTrue(vm.is_null)
         vm.finalize()

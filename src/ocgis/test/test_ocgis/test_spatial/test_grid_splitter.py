@@ -272,7 +272,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
     def test_system_splitting_unstructured_with_weights(self):
         """Only split the unstructured grid source."""
         self.run_system_splitting_unstructured(True)
-        subprocess.check_call(['tree', self.current_dir_output])
+        # subprocess.check_call(['tree', self.current_dir_output])
 
     @attr('esmf')
     def test_create_merged_weight_file(self):

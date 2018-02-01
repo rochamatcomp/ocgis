@@ -1332,8 +1332,9 @@ class TestGridUnstruct(TestBase):
 
     def test_resolution(self):
         ug = self.fixture()
+        self.assertFalse(ug.is_isomorphic)
         with self.assertRaises(NotImplementedError):
-            ug.resolution
+            assert ug.resolution
 
     def test_update_crs(self):
         f = self.fixture_mock()

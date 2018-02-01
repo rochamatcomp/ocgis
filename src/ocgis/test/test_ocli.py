@@ -50,7 +50,7 @@ class Test(TestBase):
 
     def test_tdk_ugrid_subset(self):
         # tdk: REMOVE: this is a development-only test
-        self.fail()
+        raise SkipTest
         # bbox = (-0.02836192562955318, -90.02836192562955, 358.7783619256295, 45.73516820835204)
         bbox = (305., -7.0, 305., -7.0)
         bbox = box(*bbox)
@@ -66,6 +66,7 @@ class Test(TestBase):
 
     def test_tdk_subsets_okay(self):
         # tdk: REMOVE
+        raise SkipTest
         self.fail()
         path = '/tmp/cesm-manip'
         extents = Dict()

@@ -416,15 +416,18 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
     @property
     def resolution(self):
         # tdk: DOC
-        if 1 in self.shape:
-            if self.shape[0] != 1:
-                ret = self.resolution_y
-            elif self.shape[1] != 1:
-                ret = self.resolution_x
+        if self.is_isomorphic:
+            if 1 in self.shape:
+                if self.shape[0] != 1:
+                    ret = self.resolution_y
+                elif self.shape[1] != 1:
+                    ret = self.resolution_x
+                else:
+                    raise NotImplementedError(self.shape)
             else:
-                raise NotImplementedError(self.shape)
+                ret = np.mean([self.resolution_y, self.resolution_x])
         else:
-            ret = np.mean([self.resolution_y, self.resolution_x])
+            raise NotImplementedError('Resolution not defined when "self.is_isomorphic=False"')
 
         return ret
 

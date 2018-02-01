@@ -227,7 +227,6 @@ class Grid(AbstractGrid, AbstractXYZSpatialContainer):
         abstraction = kwargs.pop(KeywordArgument.ABSTRACTION, KeywordArgument.Defaults.ABSTRACTION)
 
         # Structured grids are always considered isomorphic.
-        # tdk: TEST: that is_isomorphic=False will raise an exception on resolutions
         kwargs[DMK.IS_ISOMORPHIC] = True
 
         AbstractXYZSpatialContainer.__init__(self, **kwargs)
