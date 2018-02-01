@@ -101,15 +101,13 @@ class Test(TestBase):
     @mock.patch('tempfile.mkdtemp')
     @mock.patch('ocli.GridSplitter')
     @mock.patch('ocli.RequestDataset')
-    @attr('mpi')
+    @attr('mpi', 'slow')
     def test_system_mock_combinations(self, mRequestDataset, mGridSplitter, m_mkdtemp, m_rmtree, m_makedirs,
                                       m_write_spatial_subset):
         if ocgis.vm.size not in [1, 2]:
             raise SkipTest('ocgis.vm.size not in [1, 2]')
 
-        poss_weight = {'filename': self.get_temporary_file_path('weights.nc'),
-                       # 'prefix': self.get_temporary_file_path('weight_chunk_')
-                       }
+        poss_weight = {'filename': self.get_temporary_file_path('weights.nc')}
 
         m_mkdtemp.return_value = 'mkdtemp return value'
 
@@ -126,12 +124,11 @@ class Test(TestBase):
                     cli_args.append(v2)
 
             # Add the output weight filename if requested.
-            if 'no_merge' not in new_poss:
+            if 'no_merge' not in new_poss or 'spatial_subset' in new_poss:
                 weight = poss_weight['filename']
                 new_poss['weight'] = weight
                 cli_args.extend(['--weight', weight])
 
-            # print(cli_args)
             runner = CliRunner()
             result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
             self.assertEqual(result.exit_code, 0)
@@ -315,21 +312,21 @@ class Test(TestBase):
 
         self.assertWeightFilesEquivalent(rwg_weights_path, esmpy_weights_path)
 
-    @attr('mpi')
-    def test_cesm_manip(self):
+    @attr('mpi', 'esmf')
+    def test_system_cesm_manip_chunked_versus_global(self):
+        """Test weight files are equivalent using the chunked versus global weight generation approach."""
         # tdk: needs to work in parallel
-        # tdk: needs to work with conservative
-        # tdk: CLEAN
-        # tdk: REMOVE
-        self.remove_dir = False
-        env.CLOBBER_UNITS_ON_BOUNDS = False
-
-        # tdk
-        print('output directory={}'.format(self.current_dir_output))
+        # tdk: order
 
         if ocgis.vm.size not in [1, 4]:
             raise SkipTest('ocgis.vm.size not in [1, 4]')
 
+        import ESMF
+
+        # Do not put units on bounds variables.
+        env.CLOBBER_UNITS_ON_BOUNDS = False
+
+        # Create source and destination files. -------------------------------------------------------------------------
         src_grid = create_gridxy_global(resolution=15)
         dst_grid = create_gridxy_global(resolution=12)
 
@@ -348,48 +345,30 @@ class Test(TestBase):
             destination = None
         destination = ocgis.vm.bcast(destination)
         dst_field.write(destination)
+        # --------------------------------------------------------------------------------------------------------------
 
-        # Generate the source and destination chunks.
-        runner = CliRunner()
+        # Directory for output grid chunks.
         wd = os.path.join(self.current_dir_output, 'chunks')
-        cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--nchunks_dst', '2,3', '--wd', wd]
+        # Path to the merged weight file.
+        weight = self.get_temporary_file_path('merged_weights.nc')
+
+        # Generate the source and destination chunks and a merged weight file.
+        runner = CliRunner()
+        cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--nchunks_dst', '2,3', '--wd', wd,
+                    '--weight', weight]
         result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         self.assertTrue(len(os.listdir(wd)) > 3)
 
-        # Generate weights for each source and destination combination.
-        # tdk: REMOVE
-        # src_template = 'split_src_{}.nc'
-        # dst_template = 'split_dst_{}.nc'
-        # wgt_template = 'esmf_weights_{}.nc'
-        # for ii in range(1, 7):
-        #     src_path = os.path.join(wd, src_template.format(ii))
-        #     dst_path = os.path.join(wd, dst_template.format(ii))
-        #     wgt_path = os.path.join(wd, wgt_template.format(ii))
-        #     # tdk: why is the regional flag needed? i thought this was not needed.
-        #     cmd = ['ESMF_RegridWeightGen', '-s', src_path, '--src_type', 'GRIDSPEC', '-d', dst_path, '--dst_type',
-        #            'GRIDSPEC', '-w', wgt_path, '--method', 'conserve', '--no-log', '-r', '--weight-only']
-        #     subprocess.check_call(cmd)
-
-
-        merged_weights = os.path.join(wd, 'merged_weights.nc')
-        with ocgis.vm.scoped('merge weights', [0]):
-            if not ocgis.vm.is_null:
-                # Create a global weights file from the individual weight files.
-                cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--wd', wd, '--nchunks_dst',
-                            '2,3',
-                            '--merge', '--weight', merged_weights]
-                result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
-                self.assertEqual(result.exit_code, 0)
-        ocgis.vm.barrier()
-
         # Create a standard ESMF weights file from the original grid files.
         esmf_weights_path = self.get_temporary_file_path('esmf_desired_weights.nc')
 
+        # Generate weights using ESMF command line interface.
         # cmd = ['ESMF_RegridWeightGen', '-s', source, '--src_type', 'GRIDSPEC', '-d', destination, '--dst_type',
         #        'GRIDSPEC', '-w', esmf_weights_path, '--method', 'conserve', '--no-log']
         # subprocess.check_call(cmd)
 
+        # Create a weights file using the ESMF Python interface.
         srcgrid = ESMF.Grid(filename=source, filetype=ESMF.FileFormat.GRIDSPEC, add_corner_stagger=True)
         dstgrid = ESMF.Grid(filename=destination, filetype=ESMF.FileFormat.GRIDSPEC, add_corner_stagger=True)
         srcfield = ESMF.Field(grid=srcgrid)
@@ -398,7 +377,8 @@ class Test(TestBase):
                         regrid_method=ESMF.RegridMethod.CONSERVE)
 
         if ocgis.vm.rank == 0:
-            self.assertWeightFilesEquivalent(esmf_weights_path, merged_weights)
+            # Assert the weight files are equivalent using chunked versus global creation.
+            self.assertWeightFilesEquivalent(esmf_weights_path, weight)
 
     def test_cesm_manip_spatial_subset(self):
         dst_grid = create_gridxy_global(crs=Spherical())
