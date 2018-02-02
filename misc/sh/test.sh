@@ -10,7 +10,7 @@ export RUN_SERIAL_TESTS="true"
 export RUN_PARALLEL_TESTS="true"
 #export RUN_PARALLEL_TESTS="false"
 
-# Wall time for the tests (seconds). Equal to 1.5*`time test-core.sh`.
+# Wall time for the tests (seconds). Equal to 1.5*`time test.sh`.
 WTIME=900
 
 ########################################################################################################################

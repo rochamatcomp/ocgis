@@ -8,7 +8,7 @@ from click.testing import CliRunner
 from shapely.geometry import box
 
 import ocgis
-from ocgis import RequestDataset, Variable, Grid
+from ocgis import RequestDataset, Variable, Grid, vm
 from ocgis import env
 from ocgis.test.base import TestBase, attr, create_gridxy_global, create_exact_field
 from ocgis.util.addict import Dict
@@ -141,7 +141,7 @@ class Test(TestBase):
                 actual = call_args[1]['paths']['wd']
                 self.assertEqual(actual, m_mkdtemp.return_value)
 
-            if 'no_merge' not in new_poss and 'spatial_subset' not in new_poss:
+            if 'no_merge' not in new_poss and 'spatial_subset' not in new_poss and vm.rank == 0:
                 instance.create_merged_weight_file.assert_called_once_with(new_poss['weight'])
             else:
                 instance.create_merged_weight_file.assert_not_called()

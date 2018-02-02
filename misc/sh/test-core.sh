@@ -44,7 +44,10 @@ echo "grep results:"
 echo "======================================================================"
 echo ""
 grep FAIL ${OUT_FILE}
-grep ERROR ${OUT_FILE}
+
+# This error is printed by a GDAL library.
+grep -v -E "ERROR 1:.*not recognised as an available field" test-ocgis.out | grep ERROR
+
 echo ""
 
 echo "Finished run_tests()"
