@@ -620,9 +620,9 @@ class GridSplitter(AbstractOcgisObject):
             src_grid = self.src_grid
         if dst_grid is None:
             dst_grid = self.dst_grid
-        srcfield, srcgrid = create_esmf_field(src_path, src_grid)
+        srcfield, srcgrid = create_esmf_field(src_path, src_grid, self.esmf_kwargs)
         ocgis_lh(logger='grid_splitter', msg='finished creating source ESMPy field', level=logging.DEBUG)
-        dstfield, dstgrid = create_esmf_field(dst_path, dst_grid)
+        dstfield, dstgrid = create_esmf_field(dst_path, dst_grid, self.esmf_kwargs)
         ocgis_lh(logger='grid_splitter', msg='finished creating destination ESMPy field', level=logging.DEBUG)
         regrid = None
 
@@ -716,12 +716,20 @@ def create_esmf_field(*args):
     return ESMF.Field(grid=grid, meshloc=meshloc), grid
 
 
-def create_esmf_grid(filename, grid):
+def create_esmf_grid(filename, grid, esmf_kwargs):
     # tdk: what to do with add_corner_stagger and is_sphere?
     filetype = grid.driver.get_esmf_filetype()
     klass = grid.driver.get_esmf_grid_class()
+
     if klass == ESMF.Grid:
-        ret = klass(filename=filename, filetype=filetype, add_corner_stagger=True, is_sphere=False)
+
+        # Corners are only needed for conservative regridding.
+        if esmf_kwargs.get('regrid_method') == ESMF.RegridMethod.BILINEAR:
+            add_corner_stagger = False
+        else:
+            add_corner_stagger = True
+
+        ret = klass(filename=filename, filetype=filetype, add_corner_stagger=add_corner_stagger, is_sphere=False)
     else:
         meshname = str(grid.dimension_map.get_variable(DMK.ATTRIBUTE_HOST))
         ret = klass(filename=filename, filetype=filetype, meshname=meshname)
