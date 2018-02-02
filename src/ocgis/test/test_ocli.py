@@ -17,7 +17,7 @@ from ocli import ocli
 
 
 #tdk: modify nose testing implementation to not load this file? how to deal with click?
-# tdk: all these tests are for cesm_manip and should be cataloged as such
+# tdk: all these tests are for chunked_regrid and should be cataloged as such
 
 @attr('cli')
 class Test(TestBase):
@@ -117,7 +117,7 @@ class Test(TestBase):
             for k2, v2 in k.items():
                 if v2 != '__exclude__':
                     new_poss[k2] = v2
-            cli_args = ['cesm_manip']
+            cli_args = ['chunked_regrid']
             for k2, v2 in new_poss.items():
                 cli_args.append('--{}'.format(k2))
                 if v2 != '__include__':
@@ -188,7 +188,7 @@ class Test(TestBase):
             for m in mocks:
                 m.reset_mock()
 
-    def test_cesm_manip_merged_weight_file_in_working_directory(self):
+    def test_chunked_regrid_merged_weight_file_in_working_directory(self):
         # tdk: ORDER
         flags = self.fixture_flags_good()
 
@@ -198,7 +198,7 @@ class Test(TestBase):
         weight = os.path.join(wd, 'weights.nc')
 
         runner = CliRunner()
-        cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--wd', wd, '--weight', weight]
+        cli_args = ['chunked_regrid', '--source', source, '--destination', destination, '--wd', wd, '--weight', weight]
         with self.assertRaises(ValueError):
             _ = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
 
@@ -269,7 +269,7 @@ class Test(TestBase):
         # Generate the source and destination chunks.
         # runner = CliRunner()
         # wd = self.current_dir_output
-        # cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--nchunks_dst', '2,3', '--wd', wd]
+        # cli_args = ['chunked_regrid', '--source', source, '--destination', destination, '--nchunks_dst', '2,3', '--wd', wd]
         # result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         # self.assertEqual(result.exit_code, 0)
         # self.assertTrue(len(os.listdir(wd)) > 3)
@@ -290,7 +290,7 @@ class Test(TestBase):
 
         # Create a global weights file from the individual weight files.
         # merged_weights = os.path.join(wd, 'merged_weights.nc')
-        # cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--wd', wd, '--nchunks_dst', '2,3',
+        # cli_args = ['chunked_regrid', '--source', source, '--destination', destination, '--wd', wd, '--nchunks_dst', '2,3',
         #             '--merge', '--weight', merged_weights]
         # result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         # self.assertEqual(result.exit_code, 0)
@@ -313,7 +313,7 @@ class Test(TestBase):
         self.assertWeightFilesEquivalent(rwg_weights_path, esmpy_weights_path)
 
     @attr('mpi', 'esmf')
-    def test_system_cesm_manip_chunked_versus_global(self):
+    def test_system_chunked_regrid_chunked_versus_global(self):
         """Test weight files are equivalent using the chunked versus global weight generation approach."""
         # tdk: needs to work in parallel
         # tdk: order
@@ -354,7 +354,8 @@ class Test(TestBase):
 
         # Generate the source and destination chunks and a merged weight file.
         runner = CliRunner()
-        cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--nchunks_dst', '2,3', '--wd', wd,
+        cli_args = ['chunked_regrid', '--source', source, '--destination', destination, '--nchunks_dst', '2,3', '--wd',
+                    wd,
                     '--weight', weight]
         result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
@@ -380,7 +381,7 @@ class Test(TestBase):
             # Assert the weight files are equivalent using chunked versus global creation.
             self.assertWeightFilesEquivalent(esmf_weights_path, weight)
 
-    def test_cesm_manip_spatial_subset(self):
+    def test_chunked_regrid_spatial_subset(self):
         env.CLOBBER_UNITS_ON_BOUNDS = False
 
         src_grid = create_gridxy_global(crs=Spherical())
@@ -408,7 +409,7 @@ class Test(TestBase):
         weight = os.path.join(self.current_dir_output, 'weights.nc')
 
         runner = CliRunner()
-        cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--wd', wd, '--spatial_subset',
+        cli_args = ['chunked_regrid', '--source', source, '--destination', destination, '--wd', wd, '--spatial_subset',
                     '--weight', weight, '--esmf_regrid_method', 'BILINEAR']
         result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)

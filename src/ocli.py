@@ -55,8 +55,9 @@ def ocli():
               help='If --no_merge, do not merge weight file chunks into a global weight file.')
 @click.option('--spatial_subset/--no_spatial_subset', default=False,
               help='Subset the destination grid by the bounding box spatial extent of the source grid.')
-def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, genweights, esmf_regrid_method,
-               src_resolution, dst_resolution, buffer_distance, wd, persist, merge, spatial_subset):
+def chunked_regrid(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, genweights,
+                   esmf_regrid_method,
+                   src_resolution, dst_resolution, buffer_distance, wd, persist, merge, spatial_subset):
     # tdk: LAST: RENAME: to ESMPy_RegridWeightGen?
 
     # tdk: REMOVE
@@ -82,7 +83,7 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
     # and it is not a merge only operation.
     if wd is None:
         if ocgis.vm.rank == 0:
-            wd = tempfile.mkdtemp(prefix='ocgis_cesm_manip_', dir=os.getcwd())
+            wd = tempfile.mkdtemp(prefix='ocgis_chunked_regrid_', dir=os.getcwd())
         wd = ocgis.vm.bcast(wd)
     else:
         if ocgis.vm.rank == 0:
