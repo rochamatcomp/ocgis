@@ -1,4 +1,6 @@
 import os
+import shutil
+import tempfile
 
 from setuptools import setup, Command, find_packages
 from setuptools.command.test import test as TestCommand
@@ -71,10 +73,8 @@ class UninstallCommand(Command):
         except ImportError:
             raise ImportError("Either OpenClimateGIS is not installed or not available on the Python path.")
 
-########################################################################################################################
-# set up data files for installation
-########################################################################################################################
 
+# Set up test data files for installation ------------------------------------------------------------------------------
 shp_parts = ['state_boundaries.cfg', 'state_boundaries.dbf', 'state_boundaries.prj', 'state_boundaries.shp',
              'state_boundaries.shx']
 shp_parts = ['bin/shp/state_boundaries/{0}'.format(element) for element in shp_parts]
@@ -82,9 +82,10 @@ bin_files = ['bin/test_csv_calc_conversion_two_calculations.csv']
 bin_files += shp_parts
 package_data = {'ocgis.test': bin_files}
 
-########################################################################################################################
-# setup command
-########################################################################################################################
+# Create temporary target for the command-line-interface ---------------------------------------------------------------
+tmpdir = tempfile.mkdtemp()
+tmptarget = os.path.join(tmpdir, 'ocli')
+shutil.copyfile(os.path.join('src', 'ocli.py'), tmptarget)
 
 setup(
     name='ocgis',
@@ -102,5 +103,8 @@ setup(
               'test_more': TestMoreCommandOcgis,
               'test_all': TestAllCommandOcgis},
     install_requires=['numpy', 'netCDF4', 'fiona', 'shapely', 'pyproj', 'six', 'gdal'],
-    tests_require=['nose', 'mock']
+    tests_require=['nose', 'mock'],
+    scripts=[tmptarget]
 )
+
+shutil.rmtree(tmpdir)
