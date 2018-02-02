@@ -694,6 +694,7 @@ def update_esmf_kwargs(target):
         target['regrid_method'] = ESMF.RegridMethod.CONSERVE
     if 'unmapped_action' not in target:
         target['unmapped_action'] = ESMF.UnmappedAction.IGNORE
+    target['create_rh'] = False
 
 
 def create_esmf_field(*args):

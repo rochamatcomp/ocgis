@@ -1,5 +1,4 @@
 import os
-import subprocess
 import sys
 
 import numpy as np
@@ -276,6 +275,8 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
 
     @attr('esmf')
     def test_create_merged_weight_file(self):
+        import ESMF
+
         path_src = self.get_temporary_file_path('src.nc')
         path_dst = self.get_temporary_file_path('dst.nc')
 
@@ -291,27 +292,6 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
                           genweights=True)
         gs.write_subsets()
 
-        # Load the grid splitter index file ----------------------------------------------------------------------------
-
-        index_filename = gs.create_full_path_from_template('index_file')
-        ifile = RequestDataset(uri=index_filename).get()
-        ifile.load()
-        gidx = ifile[GridSplitterConstants.IndexFile.NAME_INDEX_VARIABLE].attrs
-        source_filename = ifile[gidx[GridSplitterConstants.IndexFile.NAME_SOURCE_VARIABLE]]
-        sv = source_filename.join_string_value()
-        destination_filename = ifile[gidx[GridSplitterConstants.IndexFile.NAME_DESTINATION_VARIABLE]]
-        dv = destination_filename.join_string_value()
-
-        # Create weight files for each subset --------------------------------------------------------------------------
-        #
-        # for ii, sfn in enumerate(sv):
-        #     esp = os.path.join(self.current_dir_output, sfn)
-        #     edp = os.path.join(self.current_dir_output, dv[ii])
-        #     ewp = gs.create_full_path_from_template('wgt_template', index=ii + 1)
-        #     cmd = ['ESMF_RegridWeightGen', '-s', esp, '--src_type', 'GRIDSPEC', '-d', edp, '--dst_type',
-        #            'GRIDSPEC', '-w', ewp, '--method', 'conserve', '-r', '--no_log']
-        #     subprocess.check_call(cmd)
-
         # Merge weight files -------------------------------------------------------------------------------------------
 
         merged_weight_filename = self.get_temporary_file_path('merged_weights.nc')
@@ -320,9 +300,13 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         # Generate a global weight file using ESMF ---------------------------------------------------------------------
 
         global_weights_filename = self.get_temporary_file_path('global_weights.nc')
-        cmd = ['ESMF_RegridWeightGen', '-s', path_src, '--src_type', 'GRIDSPEC', '-d', path_dst, '--dst_type',
-               'GRIDSPEC', '-w', global_weights_filename, '--method', 'conserve', '--weight-only', '--no_log']
-        subprocess.check_call(cmd)
+
+        srcgrid = ESMF.Grid(filename=path_src, filetype=ESMF.FileFormat.GRIDSPEC, add_corner_stagger=True)
+        dstgrid = ESMF.Grid(filename=path_dst, filetype=ESMF.FileFormat.GRIDSPEC, add_corner_stagger=True)
+        srcfield = ESMF.Field(grid=srcgrid)
+        dstfield = ESMF.Field(grid=dstgrid)
+        _ = ESMF.Regrid(srcfield=srcfield, dstfield=dstfield, filename=global_weights_filename,
+                        regrid_method=ESMF.RegridMethod.CONSERVE)
 
         # Test merged and global weight files are equivalent -----------------------------------------------------------
 
@@ -330,60 +314,39 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
 
     @attr('esmf')
     def test_create_merged_weight_file_unstructured(self):
-        self.remove_dir = False
+        import ESMF
 
+        # Create an isomorphic source UGRID file.
         ufile = self.get_temporary_file_path('ugrid.nc')
         resolution = 10.
         self.fixture_regular_ugrid_file(ufile, resolution, crs=Spherical())
-
         src_grid = RequestDataset(ufile, driver=DriverNetcdfUGRID, grid_abstraction='point').get().grid
         self.assertEqual(src_grid.abstraction, 'point')
 
+        # Create a logically rectangular destination grid file.
         dst_grid = self.get_gridxy_global(resolution=20., crs=Spherical())
         dst_path = self.get_temporary_file_path('dst.nc')
         dst_grid.parent.write(dst_path)
 
+        # Create the grid chunks.
         gs = GridSplitter(src_grid, dst_grid, (3, 3), check_contains=False, src_grid_resolution=10.,
                           paths=self.fixture_paths, genweights=True)
         gs.write_subsets()
 
-        # Load the grid splitter index file ----------------------------------------------------------------------------
-
-        index_path = gs.create_full_path_from_template('index_file')
-        ifile = RequestDataset(uri=index_path).get()
-        ifile.load()
-        gidx = ifile[GridSplitterConstants.IndexFile.NAME_INDEX_VARIABLE].attrs
-        source_filename = ifile[gidx[GridSplitterConstants.IndexFile.NAME_SOURCE_VARIABLE]]
-        sv = source_filename.join_string_value()
-        destination_filename = ifile[gidx[GridSplitterConstants.IndexFile.NAME_DESTINATION_VARIABLE]]
-        dv = destination_filename.join_string_value()
-
-        # Create weight files for each subset --------------------------------------------------------------------------
-
-        # for ii, sfn in enumerate(sv):
-        #     esp = os.path.join(self.current_dir_output, sfn)
-        #     edp = os.path.join(self.current_dir_output, dv[ii])
-        #     ewp = gs.create_full_path_from_template('wgt_template', index=ii + 1)
-        #     cmd = ['ESMF_RegridWeightGen', '-s', esp, '--src_type', 'UGRID', '--src_meshname',
-        #            VariableName.UGRID_HOST_VARIABLE, '-d', edp, '--dst_type', 'GRIDSPEC', '-w', ewp, '--method',
-        #            'conserve', '-r', '--no_log']
-        #     subprocess.check_call(cmd)
-
-        # Merge weight files -------------------------------------------------------------------------------------------
-
+        # Merge weight files.
         mwf = self.get_temporary_file_path('merged_weight_file.nc')
         gs.create_merged_weight_file(mwf)
 
-        # Generate a global weight file using ESMF ---------------------------------------------------------------------
-
+        # Generate a global weight file using ESMF.
         global_weights_filename = self.get_temporary_file_path('global_weights.nc')
-        cmd = ['ESMF_RegridWeightGen', '-s', ufile, '--src_type', 'UGRID', '-d', dst_path, '--dst_type',
-               'GRIDSPEC', '-w', global_weights_filename, '--method', 'conserve', '--weight-only', '--no_log',
-               '--src_meshname', VariableName.UGRID_HOST_VARIABLE]
-        subprocess.check_call(cmd)
+        srcgrid = ESMF.Mesh(filename=ufile, filetype=ESMF.FileFormat.UGRID, meshname=VariableName.UGRID_HOST_VARIABLE)
+        dstgrid = ESMF.Grid(filename=dst_path, filetype=ESMF.FileFormat.GRIDSPEC, add_corner_stagger=True)
+        srcfield = ESMF.Field(grid=srcgrid, meshloc=ESMF.MeshLoc.ELEMENT)
+        dstfield = ESMF.Field(grid=dstgrid)
+        _ = ESMF.Regrid(srcfield=srcfield, dstfield=dstfield, filename=global_weights_filename,
+                        regrid_method=ESMF.RegridMethod.CONSERVE)
 
-        # Test merged and global weight files are equivalent -----------------------------------------------------------
-
+        # Test merged and global weight files are equivalent.
         self.assertWeightFilesEquivalent(global_weights_filename, mwf)
 
     @attr('slow')
