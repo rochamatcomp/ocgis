@@ -717,7 +717,7 @@ def create_esmf_field(*args):
 
 
 def create_esmf_grid(filename, grid, esmf_kwargs):
-    # tdk: what to do with add_corner_stagger and is_sphere?
+    # tdk: what to do with is_sphere?
     filetype = grid.driver.get_esmf_filetype()
     klass = grid.driver.get_esmf_grid_class()
 
