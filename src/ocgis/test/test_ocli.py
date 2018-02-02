@@ -381,33 +381,35 @@ class Test(TestBase):
             self.assertWeightFilesEquivalent(esmf_weights_path, weight)
 
     def test_cesm_manip_spatial_subset(self):
-        dst_grid = create_gridxy_global(crs=Spherical())
-        dst_field = create_exact_field(dst_grid, 'foo')
+        env.CLOBBER_UNITS_ON_BOUNDS = False
+
+        src_grid = create_gridxy_global(crs=Spherical())
+        src_field = create_exact_field(src_grid, 'foo')
 
         xvar = Variable(name='x', value=[-90., -80.], dimensions='xdim')
         yvar = Variable(name='y', value=[40., 50.], dimensions='ydim')
-        src_grid = Grid(x=xvar, y=yvar, crs=Spherical())
+        dst_grid = Grid(x=xvar, y=yvar, crs=Spherical())
 
         if ocgis.vm.rank == 0:
             source = self.get_temporary_file_path('source.nc')
         else:
             source = None
         source = ocgis.vm.bcast(source)
-        src_grid.write(source)
+        src_field.write(source)
 
         if ocgis.vm.rank == 0:
             destination = self.get_temporary_file_path('destination.nc')
         else:
             destination = None
         destination = ocgis.vm.bcast(destination)
-        dst_field.write(destination)
+        dst_grid.parent.write(destination)
 
         wd = os.path.join(self.current_dir_output, 'chunks')
         weight = os.path.join(self.current_dir_output, 'weights.nc')
 
         runner = CliRunner()
         cli_args = ['cesm_manip', '--source', source, '--destination', destination, '--wd', wd, '--spatial_subset',
-                    '--weight', weight]
+                    '--weight', weight, '--esmf_regrid_method', 'BILINEAR']
         result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
 
@@ -419,4 +421,4 @@ class Test(TestBase):
         actual_xmean = actual.grid.get_value_stacked()[1].mean()
         self.assertEqual(actual_ymean, 45.)
         self.assertEqual(actual_xmean, -85.)
-        self.assertEqual(actual.grid.shape, (16, 16))
+        self.assertEqual(actual.grid.shape, (14, 14))

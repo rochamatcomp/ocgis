@@ -692,6 +692,15 @@ def esmf_func(func):
 def update_esmf_kwargs(target):
     if 'regrid_method' not in target:
         target['regrid_method'] = ESMF.RegridMethod.CONSERVE
+    else:
+        rmap = {'CONSERVE': ESMF.RegridMethod.CONSERVE,
+                'BILINEAR': ESMF.RegridMethod.BILINEAR}
+        regrid_method = target.get('regrid_method')
+        if regrid_method not in rmap.values():
+            try:
+                target['regrid_method'] = rmap[regrid_method]
+            except KeyError:
+                raise ValueError('Chunked regridding does not support "{}".'.format(regrid_method))
     if 'unmapped_action' not in target:
         target['unmapped_action'] = ESMF.UnmappedAction.IGNORE
     target['create_rh'] = False

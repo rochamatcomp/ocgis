@@ -182,7 +182,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         mock_ESMF = mock.Mock()
         with mock.patch.dict(sys.modules, {'ESMF': mock_ESMF}):
             gs = self.get_grid_splitter(genweights=True)
-            self.assertEqual(len(gs.esmf_kwargs), 2)
+            self.assertGreaterEqual(len(gs.esmf_kwargs), 2)
             self.assertTrue(gs.genweights)
 
     def test_system_regrid_target_types(self):

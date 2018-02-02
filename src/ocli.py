@@ -36,6 +36,10 @@ def ocli():
               help='ESMF source grid type.')
 @click.option('--esmf_dst_type', type=str, nargs=1, default='GRIDSPEC',
               help='ESMF destination grid type.')
+@click.option('--genweights/--no_genweights', default=True,
+              help='Generate weights using ESMF for each source and destination subset.')
+@click.option('--esmf_regrid_method', type=str, nargs=1, default='CONSERVE',
+              help='The ESMF regrid method. Only applicable with --genweights.')
 @click.option('--src_resolution', type=float, nargs=1,
               help='Spatial resolution for the source grid. If provided, assumes a rectilinear structure.')
 @click.option('--dst_resolution', type=float, nargs=1,
@@ -51,10 +55,8 @@ def ocli():
               help='If --no_merge, do not merge weight file chunks into a global weight file.')
 @click.option('--spatial_subset/--no_spatial_subset', default=False,
               help='Subset the destination grid by the bounding box spatial extent of the source grid.')
-@click.option('--genweights/--no_genweights', default=True,
-              help='Generate weights using ESMPy for each source and destination subset.')
-def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, src_resolution, dst_resolution,
-               buffer_distance, wd, persist, merge, spatial_subset, genweights):
+def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, genweights, esmf_regrid_method,
+               src_resolution, dst_resolution, buffer_distance, wd, persist, merge, spatial_subset):
     # tdk: LAST: RENAME: to ESMPy_RegridWeightGen?
 
     # tdk: REMOVE
@@ -114,10 +116,13 @@ def cesm_manip(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst
         # Update the paths to use for the grid.
         paths = {'wd': wd}
 
+    # Arguments to ESMF regridding.
+    esmf_kwargs = {'regrid_method': esmf_regrid_method}
+
     # Create the chunked regridding object. This is used for both chunked regridding and a regrid with a spatial subset.
     gs = GridSplitter(rd_src, rd_dst, nsplits_dst=nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
                       dst_grid_resolution=dst_resolution, buffer_value=buffer_distance, redistribute=True,
-                      genweights=genweights)
+                      genweights=genweights, esmf_kwargs=esmf_kwargs)
 
     # Write subsets and generate weights if requested in the grid splitter.
     # tdk: need a weight only option; currently subsets are always written and so is the merged weight file
