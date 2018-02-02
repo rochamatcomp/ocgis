@@ -35,3 +35,6 @@
 ##############
 *ocgis.egg-info
 /test_ocgis.out
+.cache
+build
+dist

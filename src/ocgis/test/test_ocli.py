@@ -42,7 +42,7 @@ class Test(TestBase):
         poss.dst_resolution = ['__exclude__', '2.0']
         poss.buffer_distance = ['__exclude__', '3.0']
         poss.wd = ['__exclude__', self.get_temporary_file_path('wd')]
-        poss.no_persist = ['__exclude__', '__include__']
+        poss.persist = ['__exclude__', '__include__']
         poss.no_merge = ['__exclude__', '__include__']
         poss.spatial_subset = ['__exclude__', '__include__']
 
@@ -170,7 +170,7 @@ class Test(TestBase):
                 m_mkdtemp.assert_not_called()
                 m_makedirs.assert_not_called()
 
-            if 'no_persist' in new_poss:
+            if 'persist' not in new_poss:
                 if ocgis.vm.rank == 0:
                     m_rmtree.assert_called_once()
                 else:
@@ -355,8 +355,7 @@ class Test(TestBase):
         # Generate the source and destination chunks and a merged weight file.
         runner = CliRunner()
         cli_args = ['chunked_regrid', '--source', source, '--destination', destination, '--nchunks_dst', '2,3', '--wd',
-                    wd,
-                    '--weight', weight]
+                    wd, '--weight', weight, '--persist']
         result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         self.assertTrue(len(os.listdir(wd)) > 3)
@@ -410,7 +409,7 @@ class Test(TestBase):
 
         runner = CliRunner()
         cli_args = ['chunked_regrid', '--source', source, '--destination', destination, '--wd', wd, '--spatial_subset',
-                    '--weight', weight, '--esmf_regrid_method', 'BILINEAR']
+                    '--weight', weight, '--esmf_regrid_method', 'BILINEAR', '--persist']
         result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
 

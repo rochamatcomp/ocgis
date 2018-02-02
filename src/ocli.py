@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # tdk: DOC: add src_type and dst_type to RWG ESMF documentation
-# tdk: ENH: added defaults for nchunks_dst
+# tdk: ENH: add defaults for nchunks_dst
 # tdk: LAST: harmonize GridSplitter param names with final interface names
 import os
 import shutil
@@ -23,48 +23,51 @@ def ocli():
     pass
 
 
-@ocli.command(help='CESM grid manipulations to assist in regridding.')
+@ocli.command(help='Execute regridding using a spatial decomposition.')
 @click.option('-s', '--source', required=True, type=click.Path(exists=True, dir_okay=False),
               help='Path to the source grid NetCDF file.')
 @click.option('-d', '--destination', required=True, type=click.Path(exists=True, dir_okay=False),
               help='Path to the destination grid NetCDF file.')
 @click.option('-n', '--nchunks_dst',
-              help='Single integer or sequence defining the chunking decomposition for the destination grid.')
-@click.option('-w', '--weight', required=False, type=click.Path(exists=False, dir_okay=False),
-              help='Path to the output global weight file.')
-@click.option('--esmf_src_type', type=str, nargs=1, default='GRIDSPEC',
-              help='ESMF source grid type.')
-@click.option('--esmf_dst_type', type=str, nargs=1, default='GRIDSPEC',
-              help='ESMF destination grid type.')
-@click.option('--genweights/--no_genweights', default=True,
-              help='Generate weights using ESMF for each source and destination subset.')
-@click.option('--esmf_regrid_method', type=str, nargs=1, default='CONSERVE',
-              help='The ESMF regrid method. Only applicable with --genweights.')
-@click.option('--src_resolution', type=float, nargs=1,
-              help='Spatial resolution for the source grid. If provided, assumes a rectilinear structure.')
-@click.option('--dst_resolution', type=float, nargs=1,
-              help='Spatial resolution for the destination grid. If provided, assumes a rectilinear structure.')
-@click.option('--buffer_distance', type=float, nargs=1,
-              help='Specifies the spatial buffer distance to use when subsetting the source grid by the spatial extent '
-                   'of a destination grid or chunk.')
-@click.option('--wd', type=click.Path(exists=False), default=None,
-              help='Base working directory for output intermediate files.')
-@click.option('--persist/--no_persist', default=True,
-              help='If --persist, do not remove the working directory --wd following execution.')
+              help='Single integer or sequence defining the chunking decomposition for the destination grid. For '
+                   'unstructured grids, provide a single value (i.e. 100). For logically rectangular grids, two values '
+                   'are needed to describe the x and y decomposition (i.e. 10,20).')
 @click.option('--merge/--no_merge', default=True,
-              help='If --no_merge, do not merge weight file chunks into a global weight file.')
+              help='(default=True) If --merge, merge weight file chunks into a global weight file.')
+@click.option('-w', '--weight', required=False, type=click.Path(exists=False, dir_okay=False),
+              help='Path to the output global weight file. Required if --merge.')
+@click.option('--esmf_src_type', type=str, nargs=1, default='GRIDSPEC',
+              help='(default=GRIDSPEC) ESMF source grid type.')
+@click.option('--esmf_dst_type', type=str, nargs=1, default='GRIDSPEC',
+              help='(default=GRIDSPEC) ESMF destination grid type.')
+@click.option('--genweights/--no_genweights', default=True,
+              help='(default=True) Generate weights using ESMF for each source and destination subset.')
+@click.option('--esmf_regrid_method', type=str, nargs=1, default='CONSERVE',
+              help='(default=CONSERVE) The ESMF regrid method. Only applicable with --genweights.')
+@click.option('--src_resolution', type=float, nargs=1,
+              help='Optionally overload the spatial resolution of the source grid. If provided, assumes an isomorphic '
+                   'structure.')
+@click.option('--dst_resolution', type=float, nargs=1,
+              help='Optionally overload the spatial resolution of the destination grid. If provided, assumes an '
+                   'isomorphic structure.')
+@click.option('--buffer_distance', type=float, nargs=1,
+              help='Optional spatial buffer distance (in units of the destination grid) to use when subsetting '
+                   'the source grid by the spatial extent of a destination grid or chunk. This is computed internally '
+                   'if not provided.')
+@click.option('--wd', type=click.Path(exists=False), default=None,
+              help='Optional working directory for output intermediate files.')
+@click.option('--persist/--no_persist', default=False,
+              help='(default=False) If --persist, do not remove the working directory --wd following execution.')
 @click.option('--spatial_subset/--no_spatial_subset', default=False,
-              help='Subset the destination grid by the bounding box spatial extent of the source grid.')
-def chunked_regrid(source, destination, weight, nchunks_dst, esmf_src_type, esmf_dst_type, genweights,
-                   esmf_regrid_method,
-                   src_resolution, dst_resolution, buffer_distance, wd, persist, merge, spatial_subset):
-    # tdk: LAST: RENAME: to ESMPy_RegridWeightGen?
-
+              help='(default=False) Optionally Subset the destination grid by the bounding box spatial extent of the '
+                   'source grid. This will not work in parallel if --genweights.')
+def chunked_regrid(source, destination, weight, nchunks_dst, merge, esmf_src_type, esmf_dst_type, genweights,
+                   esmf_regrid_method, src_resolution, dst_resolution, buffer_distance, wd, persist, spatial_subset):
     # tdk: REMOVE
-    ocgis.env.VERBOSE = True
-    ocgis.env.DEBUG = True
+    # ocgis.env.VERBOSE = True
+    # ocgis.env.DEBUG = True
+    # ocgis.env.configure_logging(with_header=False)
     # tdk: /REMOVE
-    ocgis.env.configure_logging(with_header=False)
 
     if nchunks_dst is not None:
         # Format the chunking decomposition from its string representation.
