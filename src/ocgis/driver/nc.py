@@ -345,7 +345,7 @@ class DriverNetcdfCF(AbstractDriverNetcdfCF):
     @staticmethod
     def _gs_iter_dst_grid_slices_(grid_splitter):
         #tdk: ORDER
-        #tdk: DOC: superclass methods
+        # tdk: DOC: need superclass methods
         slice_store = []
         ydim_name = grid_splitter.dst_grid.dimensions[0].name
         xdim_name = grid_splitter.dst_grid.dimensions[1].name
