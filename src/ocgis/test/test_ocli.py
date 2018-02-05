@@ -8,8 +8,9 @@ from click.testing import CliRunner
 from shapely.geometry import box
 
 import ocgis
-from ocgis import RequestDataset, Variable, Grid, vm
+from ocgis import RequestDataset, Variable, Grid, vm, GridSplitter
 from ocgis import env
+from ocgis.driver.nc_scrip import DriverScripNetcdf
 from ocgis.test.base import TestBase, attr, create_gridxy_global, create_exact_field
 from ocgis.util.addict import Dict
 from ocgis.variable.crs import Spherical
@@ -231,6 +232,15 @@ class Test(TestBase):
             diffs.append(nwf_S_sub - gwf_S_sub)
         diffs = np.abs(diffs)
         self.assertLess(diffs.max(), 1e-14)
+
+    def test_tdk_scrip_splits(self):
+        """Test SCRIP calculation of desired chunks."""
+        # path = os.path.expanduser('~/l/i49-ugrid-cesm/0.9x1.25_c110307.nc')
+        path = os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_ne16np4_nomask_c110512.nc')
+        field = RequestDataset(uri=path, driver=DriverScripNetcdf).create_field()
+
+        gc = GridSplitter(field.grid, field.grid)
+        print('gc.nchunks_dst', gc.nchunks_dst)
 
     @attr('mpi')
     def test_tdk_esmpy_v_rwg(self):

@@ -191,7 +191,6 @@ def _write_spatial_subset_(rd_src, rd_dst, spatial_subset_path):
         dst_field_extent = dst_field.grid.extent_global
 
     ocgis_lh(logger='ocli', msg=['src_field.grid.resolution_max', src_field.grid.resolution_max], level=DEBUG)
-    print
     subset_geom = GeometryVariable.from_shapely(box(*dst_field_extent), crs=dst_field.crs, is_bbox=True)
     sub_src = sso.get_spatial_subset('intersects', subset_geom,
                                      buffer_value=GridSplitterConstants.BUFFER_RESOLUTION_MODIFIER * src_field.grid.resolution_max,

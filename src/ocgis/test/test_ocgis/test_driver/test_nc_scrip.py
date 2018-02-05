@@ -179,7 +179,7 @@ class TestDriverScripNetcdf(TestBase, FixtureDriverScripNetcdf):
         gc = mock.create_autospec(GridSplitter, spec_set=True)
         gc.dst_grid = field.grid
         actual = field.grid._gs_nchunks_dst_(gc)
-        self.assertEqual(actual, field.grid.abstractions_available['point'].y.size)
+        self.assertEqual(actual, 20)
 
 
 def run_topo_tst(obj, dmap):

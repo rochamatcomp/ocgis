@@ -1,7 +1,7 @@
 import numpy as np
 
 from ocgis import DimensionMap, env, constants, vm
-from ocgis.constants import DriverKey, DMK, Topology
+from ocgis.constants import DriverKey, DMK, Topology, MPIOps
 from ocgis.driver.base import AbstractUnstructuredDriver
 from ocgis.driver.nc import DriverNetcdf
 from ocgis.util.helpers import create_unique_global_array
@@ -124,9 +124,12 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
     @staticmethod
     def _gs_nchunks_dst_(grid_splitter):
         pgc = grid_splitter.dst_grid.abstractions_available['point']
-        y = pgc.y
-        if y.size < 100:
-            ret = y.size
+        y = pgc.y.get_value()
+        uy = create_unique_global_array(y)
+        total = vm.reduce(uy.size, MPIOps.SUM)
+        total = vm.bcast(total)
+        if total < 100:
+            ret = total
         else:
             ret = 100
         return ret
