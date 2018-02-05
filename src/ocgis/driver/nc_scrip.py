@@ -120,3 +120,13 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
             #     yld = yld, ucenter_split
             # yield yld
             yield select
+
+    @staticmethod
+    def _gs_nchunks_dst_(grid_splitter):
+        pgc = grid_splitter.dst_grid.abstractions_available['point']
+        y = pgc.y
+        if y.size < 100:
+            ret = y.size
+        else:
+            ret = 100
+        return ret

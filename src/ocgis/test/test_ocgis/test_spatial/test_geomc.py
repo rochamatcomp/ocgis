@@ -1,11 +1,12 @@
 from unittest.case import SkipTest
 
 import numpy as np
+from mock import mock
 from shapely import wkt
 from shapely.geometry import Point, MultiPolygon, box
 from shapely.geometry.polygon import Polygon
 
-from ocgis import Variable, Dimension, vm, Field, GeometryVariable, DimensionMap
+from ocgis import Variable, Dimension, vm, Field, GeometryVariable, DimensionMap, GridSplitter
 from ocgis.base import AbstractOcgisObject, raise_if_empty
 from ocgis.constants import WrappedState, DMK, GridAbstraction, Topology, DriverKey
 from ocgis.driver.nc_ugrid import DriverNetcdfUGRID
@@ -246,6 +247,13 @@ class TestPointGC(TestBase, FixturePointGC):
             actual = sub.get_value()[0]
             self.assertEqual(sub.size, 1)
             self.assertEqual(actual, desired)
+
+    def test_gs_nchunks_dst(self):
+        pgc = self.fixture()
+        gc = mock.create_autospec(GridSplitter)
+        actual = pgc._gs_nchunks_dst_(gc)
+        self.assertIsNotNone(actual)
+        self.assertEqual(actual, (100,))
 
     def test_iter_geometries(self):
         keywords = dict(umo=[None, False, True],

@@ -65,6 +65,19 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         diffs = np.abs(diffs)
         self.assertLess(diffs.max(), 1e-14)
 
+    def fixture_grid_splitter(self, **kwargs):
+        src_grid = self.get_gridxy_global(wrapped=False, with_bounds=True)
+        dst_grid = self.get_gridxy_global(wrapped=False, with_bounds=True, resolution=0.5)
+
+        self.add_data_variable_to_grid(src_grid)
+        self.add_data_variable_to_grid(dst_grid)
+
+        defaults = {'source': src_grid, 'destination': dst_grid, 'paths': self.fixture_paths, 'nchunks_dst': (2, 3)}
+        defaults.update(kwargs)
+
+        gs = GridSplitter(**defaults)
+        return gs
+
     def fixture_regular_ugrid_file(self, ufile, resolution, crs=None):
         """
         Create a UGRID convention file from a structured, rectilinear grid. This will create element centers in addition
@@ -92,19 +105,9 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         gu = GridUnstruct(geoms=[polygc, pointgc])
         gu.parent.write(ufile)
 
-    def get_grid_splitter(self, **kwargs):
-        src_grid = self.get_gridxy_global(wrapped=False, with_bounds=True)
-        dst_grid = self.get_gridxy_global(wrapped=False, with_bounds=True, resolution=0.5)
-
-        self.add_data_variable_to_grid(src_grid)
-        self.add_data_variable_to_grid(dst_grid)
-
-        gs = GridSplitter(src_grid, dst_grid, (2, 3), paths=self.fixture_paths, **kwargs)
-        return gs
-
     @attr('mpi', 'slow')
     def test(self):
-        gs = self.get_grid_splitter()
+        gs = self.fixture_grid_splitter()
 
         desired_dst_grid_sum = gs.dst_grid.parent['data'].get_value().sum()
         desired_dst_grid_sum = MPI_COMM.gather(desired_dst_grid_sum)
@@ -181,7 +184,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         # Test ESMF keyword arguments.
         mock_ESMF = mock.Mock()
         with mock.patch.dict(sys.modules, {'ESMF': mock_ESMF}):
-            gs = self.get_grid_splitter(genweights=True)
+            gs = self.fixture_grid_splitter(genweights=True)
             self.assertGreaterEqual(len(gs.esmf_kwargs), 2)
             self.assertTrue(gs.genweights)
 
@@ -228,17 +231,6 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         gs = GridSplitter(src_grid, dst_grid, (3,), paths={'wd': self.current_dir_output})
         gs.write_subsets()
         self.assertEqual(len(os.listdir(self.current_dir_output)), 7)
-
-        # tdk: LAST: remove
-        # # for slc in gs.iter_dst_grid_slices():
-        # #     print(slc)
-        # for sub in gs.iter_dst_grid_subsets(yield_slice=False):
-        #     print sub.extent
-        #     print sub.y.get_value()
-        #     print sub.x.get_value()
-        #     print '------------'
-        #     # print(sub[0].extent)
-        # tkk
 
     def run_system_splitting_unstructured(self, genweights):
         # tdk: ORDER
@@ -351,7 +343,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
 
     @attr('slow')
     def test_insert_weighted(self):
-        gs = self.get_grid_splitter()
+        gs = self.fixture_grid_splitter()
 
         dst_master_path = self.get_temporary_file_path('out.nc')
         gs.dst_grid.parent.write(dst_master_path)
@@ -382,7 +374,13 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         for k, v in list(actual_sums.items()):
             self.assertAlmostEqual(v, desired_sums[k])
 
+    def test_nchunks_dst(self):
+        gc = self.fixture_grid_splitter(nchunks_dst=None)
+        self.assertIsNotNone(gc.nchunks_dst)
+        self.assertEqual(gc.nchunks_dst, (10, 10))
+
     def test_write_subsets(self):
+        # tdk: rename: write_subsets on grid chunker to write_chunks
         # Test a destination iterator.
         grid = mock.create_autospec(GridUnstruct)
         grid._gs_initialize_ = mock.Mock()

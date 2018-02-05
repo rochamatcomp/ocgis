@@ -577,6 +577,9 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         z = dmap.get_variable(DMK.LEVEL, parent=parent, nullable=True)
         return x, y, z
 
+    def _gs_nchunks_dst_(self, grid_splitter):
+        return self.driver._gs_nchunks_dst_(grid_splitter)
+
     def _set_xyz_on_dimension_map_(self, x, y, z, pos, parent=None):
         if x.ndim == 2:
             x_pos = pos[1]

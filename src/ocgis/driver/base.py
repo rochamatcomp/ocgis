@@ -226,6 +226,14 @@ class AbstractDriver(AbstractOcgisObject):
         ompi.update_dimension_bounds()
         return ompi
 
+    @staticmethod
+    def _gs_nchunks_dst_(grid_splitter):
+        # tdk: rename: grid_splitter variable name to grid_chunker
+        # tdk: rename: _gs_ prefix to _gc_ to be consistent with grid chunker
+        # tdk: order
+        # tdk: doc
+        raise NotImplementedError
+
     def create_field(self, *args, **kwargs):
         """
         Create a field object. In general, this should not be overloaded by subclasses.

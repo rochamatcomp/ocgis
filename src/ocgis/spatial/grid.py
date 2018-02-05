@@ -926,6 +926,16 @@ class Grid(AbstractGrid, AbstractXYZSpatialContainer):
     def _gs_initialize_(self, regridding_role):
         pass
 
+    def _gs_nchunks_dst_(self, grid_splitter):
+        try:
+            ret = super(Grid, self)._gs_nchunks_dst_(grid_splitter)
+        except NotImplementedError:
+            if self.ndim != 2:
+                raise NotImplementedError('Only implemented for two dimensions.')
+            else:
+                ret = (10, 10)
+        return ret
+
     def _initialize_parent_(self, *args, **kwargs):
         return self._get_parent_class_()(*args, **kwargs)
 

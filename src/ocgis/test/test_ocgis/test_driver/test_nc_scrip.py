@@ -4,7 +4,7 @@ from unittest import SkipTest
 import numpy as np
 from mock import mock
 
-from ocgis import RequestDataset, DimensionMap, GridUnstruct, PointGC, Field, Variable, Dimension
+from ocgis import RequestDataset, DimensionMap, GridUnstruct, PointGC, Field, Variable, Dimension, GridSplitter
 from ocgis.constants import DriverKey, DMK, Topology
 from ocgis.driver.nc_scrip import DriverScripNetcdf
 from ocgis.test.base import TestBase
@@ -173,6 +173,13 @@ class TestDriverScripNetcdf(TestBase, FixtureDriverScripNetcdf):
         self.assertEqual(field.grid.abstraction, Topology.POLYGON)
 
         run_topo_tst(self, field.grid.dimension_map)
+
+    def test_gs_nchunks_dst(self):
+        field = self.fixture_driver_scrip_netcdf_field()
+        gc = mock.create_autospec(GridSplitter, spec_set=True)
+        gc.dst_grid = field.grid
+        actual = field.grid._gs_nchunks_dst_(gc)
+        self.assertEqual(actual, field.grid.abstractions_available['point'].y.size)
 
 
 def run_topo_tst(obj, dmap):

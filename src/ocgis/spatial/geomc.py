@@ -693,6 +693,13 @@ class AbstractGeometryCoordinates(AbstractXYZSpatialContainer):
         src_index_var = Variable(name=name, value=src_index, dimensions=element_dim)
         self.parent.add_variable(src_index_var)
 
+    def _gs_nchunks_dst_(self, grid_splitter):
+        try:
+            ret = super(AbstractGeometryCoordinates, self)._gs_nchunks_dst_(grid_splitter)
+        except NotImplementedError:
+            ret = (100,)
+        return ret
+
     def _initialize_parent_(self, *args, **kwargs):
         return self._get_parent_class_()(*args, **kwargs)
 

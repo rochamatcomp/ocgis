@@ -206,7 +206,11 @@ class GridSplitter(AbstractOcgisObject):
 
     @property
     def nchunks_dst(self):
-        return self._nchunks_dst
+        if self._nchunks_dst is None:
+            ret = self.src_grid._gs_nchunks_dst_(self)
+        else:
+            ret = self._nchunks_dst
+        return ret
 
     @nchunks_dst.setter
     def nchunks_dst(self, value):
