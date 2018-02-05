@@ -33,10 +33,10 @@ WD = '/home/benkoziol/l/data/bekozi-work/i49-ugrid-cesm/splits/SCRIPgrid_1x1pt_b
 GS_META = {'0.9x1.25_c110307.nc': {'spatial_resolution': 1.25,  # Not really used since the buffer value is set.
                                    'buffer_value': 0.75,
                                    # Distance to buffer around the chunk extent for the source subset.
-                                   'nsplits_dst': 96},  # This will allow at least two rows per chunk.
+                                   'nchunks_dst': 96},  # This will allow at least two rows per chunk.
            'UGRID_1km-merge-10min_HYDRO1K-merge-nomask_c130402.nc': {'spatial_resolution': 0.167},
            'SCRIPgrid_ne16np4_nomask_c110512.nc': {'buffer_value': None,
-                                                   'nsplits_dst': 50,
+                                                   'nchunks_dst': 50,
                                                    'spatial_resolution': 3.0},
            'SCRIPgrid_1x1pt_brazil_nomask_c110308.nc': {'spatial_resolution': 2.0}}
 
@@ -72,7 +72,7 @@ def iter_dst(grid_splitter, yield_slice=False):
 
     center_lat = pgc.parent['grid_center_lat'].get_value()
     ucenter_lat = np.unique(center_lat)
-    ucenter_splits = np.array_split(ucenter_lat, grid_splitter.nsplits_dst[0])
+    ucenter_splits = np.array_split(ucenter_lat, grid_splitter.nchunks_dst[0])
 
     for ctr, ucenter_split in enumerate(ucenter_splits, start=1):
         select = np.zeros_like(center_lat, dtype=bool)
@@ -113,7 +113,7 @@ def iter_dst2(grid_splitter, yield_slice=False):
     bounds_global = lon_corners.min(), lat_corners.min(), lon_corners.max(), lat_corners.max()
 
     bounds_global = box(*bounds_global).buffer(0.01).envelope.bounds
-    num = GS_META['SCRIPgrid_ne16np4_nomask_c110512.nc']['nsplits_dst']
+    num = GS_META['SCRIPgrid_ne16np4_nomask_c110512.nc']['nchunks_dst']
     lat_ranges = np.linspace(bounds_global[1], bounds_global[3], num=num)
 
     for ii in range(lat_ranges.shape[0]):
@@ -174,7 +174,7 @@ def create_grid_splitter(src_path, dst_path):
 
     dst_grid = create_scrip_grid(dst_path)
 
-    nsplits_dst = GS_META[dst_filename]['nsplits_dst']
+    nchunks_dst = GS_META[dst_filename]['nchunks_dst']
     src_grid_resolution = GS_META[src_filename]['spatial_resolution']
     dst_grid_resolution = GS_META[dst_filename]['spatial_resolution']
     buffer_value = GS_META[dst_filename]['buffer_value']
@@ -184,7 +184,7 @@ def create_grid_splitter(src_path, dst_path):
     else:
         idest = iter_dst
 
-    gs = ocgis.GridSplitter(src_grid, dst_grid, (nsplits_dst,), paths=grid_splitter_paths,
+    gs = ocgis.GridSplitter(src_grid, dst_grid, (nchunks_dst,), paths=grid_splitter_paths,
                             src_grid_resolution=src_grid_resolution, check_contains=False,
                             dst_grid_resolution=dst_grid_resolution, iter_dst=idest, buffer_value=buffer_value,
                             redistribute=True)

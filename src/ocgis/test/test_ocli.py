@@ -149,9 +149,9 @@ class Test(TestBase):
                 instance.write_subsets.assert_called_once()
 
             if k['nchunks_dst'] == '1,1':
-                self.assertEqual(call_args[1]['nsplits_dst'], (1, 1))
+                self.assertEqual(call_args[1]['nchunks_dst'], (1, 1))
             elif k['nchunks_dst'] == '1':
-                self.assertEqual(call_args[1]['nsplits_dst'], (1,))
+                self.assertEqual(call_args[1]['nchunks_dst'], (1,))
 
             self.assertEqual(mRequestDataset.call_count, 2)
 

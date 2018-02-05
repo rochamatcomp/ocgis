@@ -88,9 +88,9 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
         if vm.rank == 0:
             ucenter_lat = hgather(ucenter_lat)
             ucenter_lat.sort()
-            ucenter_splits = np.array_split(ucenter_lat, grid_splitter.nsplits_dst[0])
+            ucenter_splits = np.array_split(ucenter_lat, grid_splitter.nchunks_dst[0])
         else:
-            ucenter_splits = [None] * grid_splitter.nsplits_dst[0]
+            ucenter_splits = [None] * grid_splitter.nchunks_dst[0]
 
         # ocgis_lh(msg=['ucenter_splits=', ucenter_splits], logger='tdk', level=10)
 

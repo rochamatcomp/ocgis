@@ -125,7 +125,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         if vm.rank == 0:
             rank_sums = []
 
-        for ctr in range(1, gs.nsplits_dst[0] * gs.nsplits_dst[1] + 1):
+        for ctr in range(1, gs.nchunks_dst[0] * gs.nchunks_dst[1] + 1):
             src_path = gs.create_full_path_from_template('src_template', index=ctr)
             dst_path = gs.create_full_path_from_template('dst_template', index=ctr)
 

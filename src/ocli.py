@@ -124,7 +124,7 @@ def chunked_regrid(source, destination, weight, nchunks_dst, merge, esmf_src_typ
     esmf_kwargs = {'regrid_method': esmf_regrid_method}
 
     # Create the chunked regridding object. This is used for both chunked regridding and a regrid with a spatial subset.
-    gs = GridSplitter(rd_src, rd_dst, nsplits_dst=nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
+    gs = GridSplitter(rd_src, rd_dst, nchunks_dst=nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
                       dst_grid_resolution=dst_resolution, buffer_value=buffer_distance, redistribute=True,
                       genweights=genweights, esmf_kwargs=esmf_kwargs)
 

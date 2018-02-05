@@ -351,7 +351,7 @@ class DriverNetcdfCF(AbstractDriverNetcdfCF):
         xdim_name = grid_splitter.dst_grid.dimensions[1].name
         dst_grid_shape_global = grid_splitter.dst_grid.shape_global
         for idx in range(grid_splitter.dst_grid.ndim):
-            splits = grid_splitter.nsplits_dst[idx]
+            splits = grid_splitter.nchunks_dst[idx]
             size = dst_grid_shape_global[idx]
             slices = create_slices_for_dimension(size, splits)
             slice_store.append(slices)

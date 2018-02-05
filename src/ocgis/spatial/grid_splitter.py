@@ -45,9 +45,9 @@ class GridSplitter(AbstractOcgisObject):
     :param destination: The destination object for a regridding operation. The object must either be a grid or an object
      from which a grid is retrievable.
     :type destination: :class:`~ocgis.spatial.grid.AbstractGrid` | :class:`~ocgis.RequestDataset` | :class:`~ocgis.Field`
-    :param tuple nsplits_dst: The split count for the grid. Tuple length must match the dimension count of the grid.
+    :param tuple nchunks_dst: The split count for the grid. Tuple length must match the dimension count of the grid.
 
-    >>> npslits_dst = (2, 3)
+    >>> nchunks_dst = (2, 3)
 
     :param dict paths: Dictionary of paths used by the grid splitter. Defaults are provided.
 
@@ -82,16 +82,17 @@ class GridSplitter(AbstractOcgisObject):
     :raises: ValueError
     """
 
-    def __init__(self, source, destination, nsplits_dst=None, paths=None, check_contains=False, allow_masked=True,
+    def __init__(self, source, destination, nchunks_dst=None, paths=None, check_contains=False, allow_masked=True,
                  src_grid_resolution=None, dst_grid_resolution=None, optimized_bbox_subset='auto', iter_dst=None,
                  buffer_value=None, redistribute=False, genweights=False, esmf_kwargs=None):
-        # tdk: LAST: make nsplits_dst an optional parameter. this will make it easier to do a merge-only operation.
+        # tdk: LAST: make nchunks_dst an optional parameter. this will make it easier to do a merge-only operation.
         # tdk: DOC: genweights, esmf_kwargs
         # tdk: RENAME: Chunked weight generation
 
         self._src_grid = None
         self._dst_grid = None
         self._buffer_value = None
+        self._nchunks_dst = None
         self._optimized_bbox_subset = None
 
         self.genweights = genweights
@@ -105,11 +106,7 @@ class GridSplitter(AbstractOcgisObject):
             update_esmf_kwargs(esmf_kwargs)
         self.esmf_kwargs = esmf_kwargs
 
-        # Assert the split dimension matches the destination grid dimension.
-        if nsplits_dst is not None and len(nsplits_dst) != self.dst_grid.ndim:
-            raise ValueError('The number of splits must match the grid dimension count.')
-
-        self.nsplits_dst = nsplits_dst
+        self.nchunks_dst = nchunks_dst
         self.check_contains = check_contains
         self.allow_masked = allow_masked
         self.src_grid_resolution = src_grid_resolution
@@ -206,6 +203,17 @@ class GridSplitter(AbstractOcgisObject):
     @buffer_value.setter
     def buffer_value(self, value):
         self._buffer_value = value
+
+    @property
+    def nchunks_dst(self):
+        return self._nchunks_dst
+
+    @nchunks_dst.setter
+    def nchunks_dst(self, value):
+        # Assert the split dimension matches the destination grid dimension.
+        if value is not None and len(value) != self.dst_grid.ndim:
+            raise ValueError('The number of splits must match the grid dimension count.')
+        self._nchunks_dst = value
 
     @property
     def dst_grid(self):
@@ -349,7 +357,7 @@ class GridSplitter(AbstractOcgisObject):
 
     def iter_dst_grid_slices(self):
         """
-        Yield global slices for the destination grid using guidance from ``nsplits_dst``.
+        Yield global slices for the destination grid using guidance from ``nchunks_dst``.
 
         :return: A dictionary with keys as the grid dimension names and the values the associated slice for that
          dimension.
@@ -514,7 +522,7 @@ class GridSplitter(AbstractOcgisObject):
         src_slices = []
         index_path = self.create_full_path_from_template('index_file')
 
-        # nzeros = len(str(reduce(lambda x, y: x * y, self.nsplits_dst)))
+        # nzeros = len(str(reduce(lambda x, y: x * y, self.nchunks_dst)))
 
         ctr = 1
         ocgis_lh(logger='grid_splitter', msg='starting self.iter_src_grid_subsets', level=logging.DEBUG)
