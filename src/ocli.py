@@ -23,7 +23,7 @@ def ocli():
     pass
 
 
-@ocli.command(help='Execute regridding using a spatial decomposition.')
+@ocli.command(help='Run regridding using a spatial decomposition.')
 @click.option('-s', '--source', required=True, type=click.Path(exists=True, dir_okay=False),
               help='Path to the source grid NetCDF file.')
 @click.option('-d', '--destination', required=True, type=click.Path(exists=True, dir_okay=False),
@@ -37,13 +37,17 @@ def ocli():
 @click.option('-w', '--weight', required=False, type=click.Path(exists=False, dir_okay=False),
               help='Path to the output global weight file. Required if --merge.')
 @click.option('--esmf_src_type', type=str, nargs=1, default='GRIDSPEC',
-              help='(default=GRIDSPEC) ESMF source grid type.')
+              help='(default=GRIDSPEC) ESMF source grid type. Supports GRIDSPEC, UGRID, and SCRIP.')
 @click.option('--esmf_dst_type', type=str, nargs=1, default='GRIDSPEC',
-              help='(default=GRIDSPEC) ESMF destination grid type.')
+              help='(default=GRIDSPEC) ESMF destination grid type. Supports GRIDSPEC, UGRID, and SCRIP.')
 @click.option('--genweights/--no_genweights', default=True,
               help='(default=True) Generate weights using ESMF for each source and destination subset.')
 @click.option('--esmf_regrid_method', type=str, nargs=1, default='CONSERVE',
-              help='(default=CONSERVE) The ESMF regrid method. Only applicable with --genweights.')
+              help='(default=CONSERVE) The ESMF regrid method. Only applicable with --genweights. Supports CONSERVE '
+                   'and BILINEAR.')
+@click.option('--spatial_subset/--no_spatial_subset', default=False,
+              help='(default=False) Optionally subset the destination grid by the bounding box spatial extent of the '
+                   'source grid. This will not work in parallel if --genweights.')
 @click.option('--src_resolution', type=float, nargs=1,
               help='Optionally overload the spatial resolution of the source grid. If provided, assumes an isomorphic '
                    'structure.')
@@ -58,11 +62,8 @@ def ocli():
               help='Optional working directory for output intermediate files.')
 @click.option('--persist/--no_persist', default=False,
               help='(default=False) If --persist, do not remove the working directory --wd following execution.')
-@click.option('--spatial_subset/--no_spatial_subset', default=False,
-              help='(default=False) Optionally Subset the destination grid by the bounding box spatial extent of the '
-                   'source grid. This will not work in parallel if --genweights.')
 def chunked_regrid(source, destination, weight, nchunks_dst, merge, esmf_src_type, esmf_dst_type, genweights,
-                   esmf_regrid_method, src_resolution, dst_resolution, buffer_distance, wd, persist, spatial_subset):
+                   esmf_regrid_method, spatial_subset, src_resolution, dst_resolution, buffer_distance, wd, persist):
     # tdk: REMOVE
     # ocgis.env.VERBOSE = True
     # ocgis.env.DEBUG = True
