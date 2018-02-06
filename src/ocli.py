@@ -86,7 +86,7 @@ def chunked_regrid(source, destination, weight, nchunks_dst, merge, esmf_src_typ
     # and it is not a merge only operation.
     if wd is None:
         if ocgis.vm.rank == 0:
-            wd = tempfile.mkdtemp(prefix='ocgis_chunked_regrid_', dir=os.getcwd())
+            wd = tempfile.mkdtemp(prefix='ocgis_chunked_regrid_')
         wd = ocgis.vm.bcast(wd)
     else:
         if ocgis.vm.rank == 0:
