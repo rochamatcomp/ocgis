@@ -354,9 +354,9 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         if is_isomorphic != 'auto':
             self.is_isomorphic = is_isomorphic
 
-    def _gs_iter_dst_grid_slices_(self, grid_splitter):
+    def _gc_iter_dst_grid_slices_(self, grid_chunker):
         #tdk: ORDER
-        return self.driver._gs_iter_dst_grid_slices_(grid_splitter)
+        return self.driver._gc_iter_dst_grid_slices_(grid_chunker)
 
     @property
     def archetype(self):
@@ -577,8 +577,8 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         z = dmap.get_variable(DMK.LEVEL, parent=parent, nullable=True)
         return x, y, z
 
-    def _gs_nchunks_dst_(self, grid_splitter):
-        return self.driver._gs_nchunks_dst_(grid_splitter)
+    def _gc_nchunks_dst_(self, grid_chunker):
+        return self.driver._gc_nchunks_dst_(grid_chunker)
 
     def _set_xyz_on_dimension_map_(self, x, y, z, pos, parent=None):
         if x.ndim == 2:

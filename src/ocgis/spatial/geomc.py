@@ -11,7 +11,7 @@ from shapely.geometry.multipolygon import MultiPolygon
 
 from ocgis import env, vm
 from ocgis.base import raise_if_empty, is_unstructured_driver
-from ocgis.constants import KeywordArgument, GridAbstraction, VariableName, AttributeName, GridSplitterConstants, \
+from ocgis.constants import KeywordArgument, GridAbstraction, VariableName, AttributeName, GridChunkerConstants, \
     RegriddingRole, DMK, MPITag, DriverKey, ConversionTarget, MPI_EMPTY_VALUE
 from ocgis.exc import RequestableFeature
 from ocgis.spatial.base import AbstractXYZSpatialContainer
@@ -678,14 +678,14 @@ class AbstractGeometryCoordinates(AbstractXYZSpatialContainer):
         return self.parent.is_empty
 
     @staticmethod
-    def _gs_create_global_indices_(*args, **kwargs):
+    def _gc_create_global_indices_(*args, **kwargs):
         return None
 
-    def _gs_initialize_(self, regridding_role):
+    def _gc_initialize_(self, regridding_role):
         if regridding_role == RegriddingRole.SOURCE:
-            name = GridSplitterConstants.IndexFile.NAME_SRCIDX_GUID
+            name = GridChunkerConstants.IndexFile.NAME_SRCIDX_GUID
         elif regridding_role == RegriddingRole.DESTINATION:
-            name = GridSplitterConstants.IndexFile.NAME_DSTIDX_GUID
+            name = GridChunkerConstants.IndexFile.NAME_DSTIDX_GUID
         else:
             raise NotImplementedError(regridding_role)
         element_dim = self.element_dim
@@ -693,9 +693,9 @@ class AbstractGeometryCoordinates(AbstractXYZSpatialContainer):
         src_index_var = Variable(name=name, value=src_index, dimensions=element_dim)
         self.parent.add_variable(src_index_var)
 
-    def _gs_nchunks_dst_(self, grid_splitter):
+    def _gc_nchunks_dst_(self, grid_chunker):
         try:
-            ret = super(AbstractGeometryCoordinates, self)._gs_nchunks_dst_(grid_splitter)
+            ret = super(AbstractGeometryCoordinates, self)._gc_nchunks_dst_(grid_chunker)
         except NotImplementedError:
             ret = (100,)
         return ret

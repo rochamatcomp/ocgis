@@ -12,7 +12,7 @@ from ocgis import Dimension, vm
 from ocgis import Variable
 from ocgis.base import AbstractOcgisObject, grid_abstraction_scope
 from ocgis.collection.field import Field
-from ocgis.constants import GridSplitterConstants, RegriddingRole, Topology, DMK
+from ocgis.constants import GridChunkerConstants, RegriddingRole, Topology, DMK
 from ocgis.driver.request.core import RequestDataset
 from ocgis.spatial.geomc import AbstractGeometryCoordinates
 from ocgis.spatial.grid import GridUnstruct, AbstractGrid
@@ -25,7 +25,7 @@ from ocgis.vmachine.mpi import redistribute_by_src_idx
 manager = ESMF.Manager(debug=True)
 
 
-class GridSplitter(AbstractOcgisObject):
+class GridChunker(AbstractOcgisObject):
     """
     Splits source and destination grids into separate netCDF files. "Source" is intended to mean the source data for a
     regridding operation. "Destination" is the destination grid for regridding operation.
@@ -117,8 +117,8 @@ class GridSplitter(AbstractOcgisObject):
         self.redistribute = redistribute
 
         # Call each grid's grid splitter initialize routine.
-        self.src_grid._gs_initialize_(RegriddingRole.SOURCE)
-        self.dst_grid._gs_initialize_(RegriddingRole.DESTINATION)
+        self.src_grid._gc_initialize_(RegriddingRole.SOURCE)
+        self.dst_grid._gc_initialize_(RegriddingRole.DESTINATION)
 
         #tdk: REMOVE
         # Check optimizations.
@@ -189,7 +189,7 @@ class GridSplitter(AbstractOcgisObject):
                     target_resolution = dst_grid_resolution
                 else:
                     target_resolution = src_grid_resolution
-                ret = GridSplitterConstants.BUFFER_RESOLUTION_MODIFIER * target_resolution
+                ret = GridChunkerConstants.BUFFER_RESOLUTION_MODIFIER * target_resolution
             except NotImplementedError:
                 # Unstructured grids do not have an associated resolution unless they are isomorphic.
                 if isinstance(self.src_grid, GridUnstruct) or isinstance(self.dst_grid, GridUnstruct):
@@ -207,7 +207,7 @@ class GridSplitter(AbstractOcgisObject):
     @property
     def nchunks_dst(self):
         if self._nchunks_dst is None:
-            ret = self.src_grid._gs_nchunks_dst_(self)
+            ret = self.src_grid._gc_nchunks_dst_(self)
         else:
             ret = self._nchunks_dst
         return ret
@@ -263,7 +263,7 @@ class GridSplitter(AbstractOcgisObject):
         index_filename = self.create_full_path_from_template('index_file')
         ifile = RequestDataset(uri=index_filename).get()
         ifile.load()
-        ifc = GridSplitterConstants.IndexFile
+        ifc = GridChunkerConstants.IndexFile
         gidx = ifile[ifc.NAME_INDEX_VARIABLE].attrs
 
         src_global_shape = gidx[ifc.NAME_SRC_GRID_SHAPE]
@@ -294,8 +294,8 @@ class GridSplitter(AbstractOcgisObject):
 
         # Transfer weights to the merged file.
         sidx = 0
-        src_indices = self.src_grid._gs_create_global_indices_(src_global_shape)
-        dst_indices = self.dst_grid._gs_create_global_indices_(dst_global_shape)
+        src_indices = self.src_grid._gc_create_global_indices_(src_global_shape)
+        dst_indices = self.dst_grid._gc_create_global_indices_(dst_global_shape)
 
         out_wds = nc.Dataset(merged_weight_filename, 'a')
         for ii, wfn in enumerate(map(lambda x: os.path.join(split_weight_file_directory, x), wv)):
@@ -309,7 +309,7 @@ class GridSplitter(AbstractOcgisObject):
                 odata = wdata[wvn].get_value()
                 try:
                     split_grids_directory = self.paths['wd']
-                    odata = self._gs_remap_weight_variable_(ii, wvn, odata, src_indices, dst_indices, ifile, gidx,
+                    odata = self._gc_remap_weight_variable_(ii, wvn, odata, src_indices, dst_indices, ifile, gidx,
                                                             split_grids_directory=split_grids_directory)
                 except IndexError as e:
                     msg = "Weight filename: '{}'; Weight Variable Name: '{}'. {}".format(wfn, wvn, e.message)
@@ -330,15 +330,15 @@ class GridSplitter(AbstractOcgisObject):
         """
 
         index_field = RequestDataset(index_path).get()
-        gs_index_v = index_field[GridSplitterConstants.IndexFile.NAME_INDEX_VARIABLE]
-        dst_filenames = gs_index_v.attrs[GridSplitterConstants.IndexFile.NAME_DESTINATION_VARIABLE]
+        gs_index_v = index_field[GridChunkerConstants.IndexFile.NAME_INDEX_VARIABLE]
+        dst_filenames = gs_index_v.attrs[GridChunkerConstants.IndexFile.NAME_DESTINATION_VARIABLE]
         dst_filenames = index_field[dst_filenames]
 
-        y_bounds = GridSplitterConstants.IndexFile.NAME_Y_DST_BOUNDS_VARIABLE
+        y_bounds = GridChunkerConstants.IndexFile.NAME_Y_DST_BOUNDS_VARIABLE
         y_bounds = gs_index_v.attrs[y_bounds]
         y_bounds = index_field[y_bounds].get_value()
 
-        x_bounds = GridSplitterConstants.IndexFile.NAME_X_DST_BOUNDS_VARIABLE
+        x_bounds = GridChunkerConstants.IndexFile.NAME_X_DST_BOUNDS_VARIABLE
         x_bounds = gs_index_v.attrs[x_bounds]
         x_bounds = index_field[x_bounds].get_value()
 
@@ -370,7 +370,7 @@ class GridSplitter(AbstractOcgisObject):
         >>> example_yield = {'dimx': slice(2, 4), 'dimy': slice(10, 20)}
         """
 
-        return self.dst_grid._gs_iter_dst_grid_slices_(self)
+        return self.dst_grid._gc_iter_dst_grid_slices_(self)
 
     def iter_dst_grid_subsets(self, yield_slice=False):
         """
@@ -415,7 +415,7 @@ class GridSplitter(AbstractOcgisObject):
             iter_dst = self.iter_dst_grid_subsets(yield_slice=yield_slice)
 
         # Loop over each destination grid subset.
-        ocgis_lh(logger='grid_splitter', msg='starting "for yld in iter_dst"', level=logging.DEBUG)
+        ocgis_lh(logger='grid_chunker', msg='starting "for yld in iter_dst"', level=logging.DEBUG)
         for yld in iter_dst:
             if yield_slice:
                 dst_grid_subset, dst_slice = yld
@@ -445,7 +445,7 @@ class GridSplitter(AbstractOcgisObject):
                         # Use the envelope! A buffer returns "fancy" borders. We just want to expand the bounding box.
                         sub_box = sub_box.buffer(buffer_value).envelope
 
-                    ocgis_lh(msg=str(sub_box.bounds), level=logging.DEBUG, logger='grid_splitter')
+                    ocgis_lh(msg=str(sub_box.bounds), level=logging.DEBUG, logger='grid_chunker')
                 else:
                     sub_box, dst_box = [None, None]
 
@@ -457,11 +457,11 @@ class GridSplitter(AbstractOcgisObject):
 
             sub_box = GeometryVariable.from_shapely(sub_box, is_bbox=True, wrapped_state=dst_grid_wrapped_state,
                                                     crs=dst_grid_crs)
-            ocgis_lh(logger='grid_splitter', msg='starting "self.src_grid.get_intersects"', level=logging.DEBUG)
+            ocgis_lh(logger='grid_chunker', msg='starting "self.src_grid.get_intersects"', level=logging.DEBUG)
             src_grid_subset, src_grid_slice = self.src_grid.get_intersects(sub_box, keep_touches=False, cascade=False,
                                                                            optimized_bbox_subset=self.optimized_bbox_subset,
                                                                            return_slice=True)
-            ocgis_lh(logger='grid_splitter', msg='finished "self.src_grid.get_intersects"', level=logging.DEBUG)
+            ocgis_lh(logger='grid_chunker', msg='finished "self.src_grid.get_intersects"', level=logging.DEBUG)
             # tdk: RESUME: why is this subset not working??
             # tdk: need to use scrip bounds to get appropriate extent for the destination
 
@@ -469,7 +469,7 @@ class GridSplitter(AbstractOcgisObject):
             if hasattr(src_grid_subset, 'reduce_global'):
                 # Only redistribute if we have one live rank.
                 if self.redistribute and len(vm.get_live_ranks_from_object(src_grid_subset)) > 0:
-                    ocgis_lh(logger='grid_splitter', msg='starting redistribute', level=logging.DEBUG)
+                    ocgis_lh(logger='grid_chunker', msg='starting redistribute', level=logging.DEBUG)
                     topology = src_grid_subset.abstractions_available[Topology.POLYGON]
                     cindex = topology.cindex
                     redist_dimname = self.src_grid.abstractions_available[Topology.POLYGON].element_dim.name
@@ -478,7 +478,7 @@ class GridSplitter(AbstractOcgisObject):
                     else:
                         redist_dim = topology.element_dim
                     redistribute_by_src_idx(cindex, redist_dimname, redist_dim)
-                    ocgis_lh(logger='grid_splitter', msg='finished redistribute', level=logging.DEBUG)
+                    ocgis_lh(logger='grid_chunker', msg='finished redistribute', level=logging.DEBUG)
 
             with vm.scoped_by_emptyable('src_grid_subset', src_grid_subset):
                 if not vm.is_null:
@@ -494,9 +494,9 @@ class GridSplitter(AbstractOcgisObject):
 
                     # Try to reduce the coordinates in the case of unstructured grid data.
                     if hasattr(src_grid_subset, 'reduce_global'):
-                        ocgis_lh(logger='grid_splitter', msg='starting reduce_global', level=logging.DEBUG)
+                        ocgis_lh(logger='grid_chunker', msg='starting reduce_global', level=logging.DEBUG)
                         src_grid_subset = src_grid_subset.reduce_global()
-                        ocgis_lh(logger='grid_splitter', msg='finished reduce_global', level=logging.DEBUG)
+                        ocgis_lh(logger='grid_chunker', msg='finished reduce_global', level=logging.DEBUG)
                 else:
                     pass
                     # src_grid_subset = VariableCollection(is_empty=True)
@@ -529,9 +529,10 @@ class GridSplitter(AbstractOcgisObject):
         # nzeros = len(str(reduce(lambda x, y: x * y, self.nchunks_dst)))
 
         ctr = 1
-        ocgis_lh(logger='grid_splitter', msg='starting self.iter_src_grid_subsets', level=logging.DEBUG)
+        ocgis_lh(logger='grid_chunker', msg='starting self.iter_src_grid_subsets', level=logging.DEBUG)
         for sub_src, src_slc, sub_dst, dst_slc in self.iter_src_grid_subsets(yield_dst=True):
-            ocgis_lh(logger='grid_splitter', msg='finished iteration {} for self.iter_src_grid_subsets'.format(ctr), level=logging.DEBUG)
+            ocgis_lh(logger='grid_chunker', msg='finished iteration {} for self.iter_src_grid_subsets'.format(ctr),
+                     level=logging.DEBUG)
 
             src_path = self.create_full_path_from_template('src_template', index=ctr)
             dst_path = self.create_full_path_from_template('dst_template', index=ctr)
@@ -552,10 +553,10 @@ class GridSplitter(AbstractOcgisObject):
             for target, path in zip(*zip_args):
                 with vm.scoped_by_emptyable('field.write', target):
                     if not vm.is_null:
-                        ocgis_lh(logger='grid_splitter', msg='writing: {}'.format(path), level=logging.DEBUG)
+                        ocgis_lh(logger='grid_chunker', msg='writing: {}'.format(path), level=logging.DEBUG)
                         field = Field(grid=target)
                         field.write(path)
-                        ocgis_lh(logger='grid_splitter', msg='finished writing: {}'.format(path), level=logging.DEBUG)
+                        ocgis_lh(logger='grid_chunker', msg='finished writing: {}'.format(path), level=logging.DEBUG)
 
             # Increment the counter outside of the loop to avoid counting empty subsets.
             ctr += 1
@@ -587,21 +588,21 @@ class GridSplitter(AbstractOcgisObject):
                 dim = Dimension('nfiles', len(src_filenames))
                 vname = ['source_filename', 'destination_filename', 'weights_filename']
                 values = [src_filenames, dst_filenames, wgt_filenames]
-                grid_splitter_destination = GridSplitterConstants.IndexFile.NAME_DESTINATION_VARIABLE
-                attrs = [{'esmf_role': 'grid_splitter_source'},
-                         {'esmf_role': grid_splitter_destination},
-                         {'esmf_role': 'grid_splitter_weights'}]
+                grid_chunker_destination = GridChunkerConstants.IndexFile.NAME_DESTINATION_VARIABLE
+                attrs = [{'esmf_role': 'grid_chunker_source'},
+                         {'esmf_role': grid_chunker_destination},
+                         {'esmf_role': 'grid_chunker_weights'}]
 
                 vc = VariableCollection()
 
-                grid_splitter_index = GridSplitterConstants.IndexFile.NAME_INDEX_VARIABLE
-                vidx = Variable(name=grid_splitter_index)
-                vidx.attrs['esmf_role'] = grid_splitter_index
-                vidx.attrs['grid_splitter_source'] = 'source_filename'
-                vidx.attrs[GridSplitterConstants.IndexFile.NAME_DESTINATION_VARIABLE] = 'destination_filename'
-                vidx.attrs['grid_splitter_weights'] = 'weights_filename'
-                vidx.attrs[GridSplitterConstants.IndexFile.NAME_SRC_GRID_SHAPE] = src_global_shape
-                vidx.attrs[GridSplitterConstants.IndexFile.NAME_DST_GRID_SHAPE] = dst_global_shape
+                grid_chunker_index = GridChunkerConstants.IndexFile.NAME_INDEX_VARIABLE
+                vidx = Variable(name=grid_chunker_index)
+                vidx.attrs['esmf_role'] = grid_chunker_index
+                vidx.attrs['grid_chunker_source'] = 'source_filename'
+                vidx.attrs[GridChunkerConstants.IndexFile.NAME_DESTINATION_VARIABLE] = 'destination_filename'
+                vidx.attrs['grid_chunker_weights'] = 'weights_filename'
+                vidx.attrs[GridChunkerConstants.IndexFile.NAME_SRC_GRID_SHAPE] = src_global_shape
+                vidx.attrs[GridChunkerConstants.IndexFile.NAME_DST_GRID_SHAPE] = dst_global_shape
 
                 vc.add_variable(vidx)
 
@@ -612,11 +613,11 @@ class GridSplitter(AbstractOcgisObject):
                 bounds_dimension = Dimension(name='bounds', size=2)
                 # TODO: This needs to work with four dimensions.
                 # Source -----------------------------------------------------------------------------------------------
-                self.src_grid._gs_create_index_bounds_(RegriddingRole.SOURCE, vidx, vc, src_slices, dim,
+                self.src_grid._gc_create_index_bounds_(RegriddingRole.SOURCE, vidx, vc, src_slices, dim,
                                                        bounds_dimension)
 
                 # Destination ------------------------------------------------------------------------------------------
-                self.dst_grid._gs_create_index_bounds_(RegriddingRole.DESTINATION, vidx, vc, dst_slices, dim,
+                self.dst_grid._gc_create_index_bounds_(RegriddingRole.DESTINATION, vidx, vc, dst_slices, dim,
                                                        bounds_dimension)
 
                 vc.write(index_path)
@@ -626,16 +627,16 @@ class GridSplitter(AbstractOcgisObject):
     def write_esmf_weights(self, src_path, dst_path, wgt_path, src_grid=None, dst_grid=None):
         # tdk: ORDER
         # tdk: DOC
-        ocgis_lh(logger='grid_splitter', msg='entering write_esmf_weights', level=logging.DEBUG)
+        ocgis_lh(logger='grid_chunker', msg='entering write_esmf_weights', level=logging.DEBUG)
         assert wgt_path is not None
         if src_grid is None:
             src_grid = self.src_grid
         if dst_grid is None:
             dst_grid = self.dst_grid
         srcfield, srcgrid = create_esmf_field(src_path, src_grid, self.esmf_kwargs)
-        ocgis_lh(logger='grid_splitter', msg='finished creating source ESMPy field', level=logging.DEBUG)
+        ocgis_lh(logger='grid_chunker', msg='finished creating source ESMPy field', level=logging.DEBUG)
         dstfield, dstgrid = create_esmf_field(dst_path, dst_grid, self.esmf_kwargs)
-        ocgis_lh(logger='grid_splitter', msg='finished creating destination ESMPy field', level=logging.DEBUG)
+        ocgis_lh(logger='grid_chunker', msg='finished creating destination ESMPy field', level=logging.DEBUG)
         regrid = None
 
         try:
@@ -651,12 +652,12 @@ class GridSplitter(AbstractOcgisObject):
             del dstgrid
             del dstfield
 
-    def _gs_remap_weight_variable_(self, ii, wvn, odata, src_indices, dst_indices, ifile, gidx,
+    def _gc_remap_weight_variable_(self, ii, wvn, odata, src_indices, dst_indices, ifile, gidx,
                                    split_grids_directory=None):
         if wvn == 'S':
             pass
         else:
-            ifc = GridSplitterConstants.IndexFile
+            ifc = GridChunkerConstants.IndexFile
             if wvn == 'row':
                 is_unstruct = isinstance(self.dst_grid, GridUnstruct)
                 if is_unstruct:

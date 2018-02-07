@@ -343,15 +343,15 @@ class DriverNetcdfCF(AbstractDriverNetcdfCF):
     _priority = True
 
     @staticmethod
-    def _gs_iter_dst_grid_slices_(grid_splitter):
+    def _gc_iter_dst_grid_slices_(grid_chunker):
         #tdk: ORDER
         # tdk: DOC: need superclass methods
         slice_store = []
-        ydim_name = grid_splitter.dst_grid.dimensions[0].name
-        xdim_name = grid_splitter.dst_grid.dimensions[1].name
-        dst_grid_shape_global = grid_splitter.dst_grid.shape_global
-        for idx in range(grid_splitter.dst_grid.ndim):
-            splits = grid_splitter.nchunks_dst[idx]
+        ydim_name = grid_chunker.dst_grid.dimensions[0].name
+        xdim_name = grid_chunker.dst_grid.dimensions[1].name
+        dst_grid_shape_global = grid_chunker.dst_grid.shape_global
+        for idx in range(grid_chunker.dst_grid.ndim):
+            splits = grid_chunker.nchunks_dst[idx]
             size = dst_grid_shape_global[idx]
             slices = create_slices_for_dimension(size, splits)
             slice_store.append(slices)

@@ -67,11 +67,11 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
         return field
 
     @staticmethod
-    def _gs_iter_dst_grid_slices_(grid_splitter):
+    def _gc_iter_dst_grid_slices_(grid_chunker):
         # tdk: CLEAN
         # tdk: HACK: this method uses some global gathers which is not ideal
         # Destination splitting works off center coordinates only.
-        pgc = grid_splitter.dst_grid.abstractions_available['point']
+        pgc = grid_chunker.dst_grid.abstractions_available['point']
 
         # Use the unique center values to break the grid into pieces. This ensures that nearby grid cell are close
         # spatially. If we just break the grid into pieces w/out using unique values, the points may be scattered which
@@ -88,9 +88,9 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
         if vm.rank == 0:
             ucenter_lat = hgather(ucenter_lat)
             ucenter_lat.sort()
-            ucenter_splits = np.array_split(ucenter_lat, grid_splitter.nchunks_dst[0])
+            ucenter_splits = np.array_split(ucenter_lat, grid_chunker.nchunks_dst[0])
         else:
-            ucenter_splits = [None] * grid_splitter.nchunks_dst[0]
+            ucenter_splits = [None] * grid_chunker.nchunks_dst[0]
 
         # ocgis_lh(msg=['ucenter_splits=', ucenter_splits], logger='tdk', level=10)
 
@@ -122,8 +122,8 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
             yield select
 
     @staticmethod
-    def _gs_nchunks_dst_(grid_splitter):
-        pgc = grid_splitter.dst_grid.abstractions_available['point']
+    def _gc_nchunks_dst_(grid_chunker):
+        pgc = grid_chunker.dst_grid.abstractions_available['point']
         y = pgc.y.get_value()
         uy = create_unique_global_array(y)
         total = vm.reduce(uy.size, MPIOps.SUM)

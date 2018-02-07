@@ -12,7 +12,7 @@ from ocgis import Variable, vm
 from ocgis.base import get_dimension_names, raise_if_empty, AbstractOcgisObject, get_variable_names, \
     is_unstructured_driver
 from ocgis.constants import WrappedState, VariableName, KeywordArgument, GridAbstraction, DriverKey, \
-    GridSplitterConstants, RegriddingRole, Topology, DMK, CFName
+    GridChunkerConstants, RegriddingRole, Topology, DMK, CFName
 from ocgis.environment import ogr, env
 from ocgis.exc import GridDeficientError, EmptySubsetError, AllElementsMaskedError
 from ocgis.spatial.base import AbstractXYZSpatialContainer
@@ -175,7 +175,7 @@ class AbstractGrid(AbstractOcgisObject):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def _gs_create_index_bounds_(self, *args, **kwargs):
+    def _gc_create_index_bounds_(self, *args, **kwargs):
         raise NotImplementedError
 
 
@@ -885,14 +885,14 @@ class Grid(AbstractGrid, AbstractXYZSpatialContainer):
         return self.parent.is_empty
 
     @staticmethod
-    def _gs_create_global_indices_(global_shape, **kwargs):
+    def _gc_create_global_indices_(global_shape, **kwargs):
         return np.arange(1, reduce(lambda x, y: x * y, global_shape) + 1, **kwargs).reshape(*global_shape, order='C')
 
-    def _gs_create_index_bounds_(self, regridding_role, host_attribute_variable, parent, slices, split_dimension,
+    def _gc_create_index_bounds_(self, regridding_role, host_attribute_variable, parent, slices, split_dimension,
                                  bounds_dimension):
         raise_if_empty(self)
 
-        constants_gci = GridSplitterConstants.IndexFile
+        constants_gci = GridChunkerConstants.IndexFile
         if regridding_role == RegriddingRole.DESTINATION:
             name_x_bounds = constants_gci.NAME_X_DST_BOUNDS_VARIABLE
             name_y_bounds = constants_gci.NAME_Y_DST_BOUNDS_VARIABLE
@@ -923,12 +923,12 @@ class Grid(AbstractGrid, AbstractXYZSpatialContainer):
         parent.add_variable(xb)
         parent.add_variable(yb)
 
-    def _gs_initialize_(self, regridding_role):
+    def _gc_initialize_(self, regridding_role):
         pass
 
-    def _gs_nchunks_dst_(self, grid_splitter):
+    def _gc_nchunks_dst_(self, grid_chunker):
         try:
-            ret = super(Grid, self)._gs_nchunks_dst_(grid_splitter)
+            ret = super(Grid, self)._gc_nchunks_dst_(grid_chunker)
         except NotImplementedError:
             if self.ndim != 2:
                 raise NotImplementedError('Only implemented for two dimensions.')
@@ -958,7 +958,7 @@ class GridUnstruct(AbstractGrid):
     __internal_attrs__ = ('__customizers__', 'abstraction', 'abstractions_available', 'archetype',
                           'coordinate_variables', 'dimension_map', 'geoms', 'get_abstraction_geometry', 'reduce_global',
                           'update_crs', '_get_auto_abstraction_', '_get_available_abstractions_',
-                          '_gs_create_index_bounds_')
+                          '_gc_create_index_bounds_')
     __customizers__ = {Topology.POLYGON: PolygonGC, Topology.LINE: LineGC, Topology.POINT: PointGC}
 
     def __init__(self, geoms=None, abstraction=GridAbstraction.AUTO, parent=None):
@@ -1068,7 +1068,7 @@ class GridUnstruct(AbstractGrid):
                 ret[h] = possible[h]
         return ret
 
-    def _gs_create_index_bounds_(self, *args, **kwargs):
+    def _gc_create_index_bounds_(self, *args, **kwargs):
         pass
 
 

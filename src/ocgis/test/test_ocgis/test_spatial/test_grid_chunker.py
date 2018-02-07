@@ -7,10 +7,10 @@ from shapely.geometry import box
 
 from ocgis import RequestDataset, Field, vm, env
 from ocgis.base import get_variable_names
-from ocgis.constants import MPIWriteMode, GridSplitterConstants, VariableName, WrappedState
+from ocgis.constants import MPIWriteMode, GridChunkerConstants, VariableName, WrappedState
 from ocgis.driver.nc_ugrid import DriverNetcdfUGRID
 from ocgis.spatial.grid import GridUnstruct, Grid
-from ocgis.spatial.grid_splitter import GridSplitter, does_contain
+from ocgis.spatial.grid_chunker import GridChunker, does_contain
 from ocgis.test.base import attr, AbstractTestInterface, create_gridxy_global
 from ocgis.test.test_ocgis.test_driver.test_nc_scrip import FixtureDriverScripNetcdf
 from ocgis.variable.base import Variable
@@ -20,7 +20,7 @@ from ocgis.variable.temporal import TemporalVariable
 from ocgis.vmachine.mpi import MPI_COMM, MPI_RANK
 
 
-class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
+class TestGridChunker(AbstractTestInterface, FixtureDriverScripNetcdf):
 
     @property
     def fixture_paths(self):
@@ -65,7 +65,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         diffs = np.abs(diffs)
         self.assertLess(diffs.max(), 1e-14)
 
-    def fixture_grid_splitter(self, **kwargs):
+    def fixture_grid_chunker(self, **kwargs):
         src_grid = self.get_gridxy_global(wrapped=False, with_bounds=True)
         dst_grid = self.get_gridxy_global(wrapped=False, with_bounds=True, resolution=0.5)
 
@@ -75,7 +75,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         defaults = {'source': src_grid, 'destination': dst_grid, 'paths': self.fixture_paths, 'nchunks_dst': (2, 3)}
         defaults.update(kwargs)
 
-        gs = GridSplitter(**defaults)
+        gs = GridChunker(**defaults)
         return gs
 
     def fixture_regular_ugrid_file(self, ufile, resolution, crs=None):
@@ -107,7 +107,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
 
     @attr('mpi', 'slow')
     def test(self):
-        gs = self.fixture_grid_splitter()
+        gs = self.fixture_grid_chunker()
 
         desired_dst_grid_sum = gs.dst_grid.parent['data'].get_value().sum()
         desired_dst_grid_sum = MPI_COMM.gather(desired_dst_grid_sum)
@@ -172,19 +172,19 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         gridu.resolution_max = None
         self.assertIsInstance(gridu, GridUnstruct)
         for g in [grid, gridu]:
-            g._gs_initialize_ = mock.Mock()
+            g._gc_initialize_ = mock.Mock()
 
-        gs = GridSplitter(gridu, grid, (3, 4), paths=self.fixture_paths)
+        gs = GridChunker(gridu, grid, (3, 4), paths=self.fixture_paths)
         self.assertFalse(gs.optimized_bbox_subset)
 
-        gs = GridSplitter(gridu, grid, (3, 4), src_grid_resolution=1.0, dst_grid_resolution=2.0,
-                          paths=self.fixture_paths)
+        gs = GridChunker(gridu, grid, (3, 4), src_grid_resolution=1.0, dst_grid_resolution=2.0,
+                         paths=self.fixture_paths)
         self.assertTrue(gs.optimized_bbox_subset)
 
         # Test ESMF keyword arguments.
         mock_ESMF = mock.Mock()
         with mock.patch.dict(sys.modules, {'ESMF': mock_ESMF}):
-            gs = self.fixture_grid_splitter(genweights=True)
+            gs = self.fixture_grid_chunker(genweights=True)
             self.assertGreaterEqual(len(gs.esmf_kwargs), 2)
             self.assertTrue(gs.genweights)
 
@@ -208,7 +208,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         # Test with request datasets.
         source = _create_mRequestDataset_()
         destination = _create_mRequestDataset_()
-        gs = GridSplitter(source, destination, (1, 1))
+        gs = GridChunker(source, destination, (1, 1))
         for t in [source, destination]:
             t.create_field.assert_called_once()
         for t in [gs.src_grid, gs.dst_grid]:
@@ -217,7 +217,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         # Test with fields.
         source, psource = _create_mField_()
         destination, pdestination = _create_mField_()
-        gs = GridSplitter(source, destination, (1, 1))
+        gs = GridChunker(source, destination, (1, 1))
         for t in [psource, pdestination]:
             t.assert_called_once_with()
         for t in [gs.src_grid, gs.dst_grid]:
@@ -228,7 +228,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
 
         src_grid = create_gridxy_global()
         dst_grid = self.fixture_driver_scrip_netcdf_field().grid
-        gs = GridSplitter(src_grid, dst_grid, (3,), paths={'wd': self.current_dir_output})
+        gs = GridChunker(src_grid, dst_grid, (3,), paths={'wd': self.current_dir_output})
         gs.write_subsets()
         self.assertEqual(len(os.listdir(self.current_dir_output)), 7)
 
@@ -246,14 +246,14 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         self.assertEqual(src_grid.abstraction, 'point')
         dst_grid = self.get_gridxy_global(resolution=20., crs=Spherical())
 
-        gs = GridSplitter(src_grid, dst_grid, (3, 3), check_contains=False, src_grid_resolution=10.,
-                          paths=self.fixture_paths, genweights=genweights)
+        gs = GridChunker(src_grid, dst_grid, (3, 3), check_contains=False, src_grid_resolution=10.,
+                         paths=self.fixture_paths, genweights=genweights)
 
         gs.write_subsets()
 
         actual = gs.create_full_path_from_template('src_template', index=1)
         actual = RequestDataset(actual).get()
-        self.assertIn(GridSplitterConstants.IndexFile.NAME_SRCIDX_GUID, actual)
+        self.assertIn(GridChunkerConstants.IndexFile.NAME_SRCIDX_GUID, actual)
 
     def test_system_splitting_unstructured_no_weights(self):
         """Only split the unstructured grid source."""
@@ -280,8 +280,8 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
 
         # Split source and destination grids ---------------------------------------------------------------------------
 
-        gs = GridSplitter(src_grid, dst_grid, (2, 2), check_contains=False, allow_masked=True, paths=self.fixture_paths,
-                          genweights=True)
+        gs = GridChunker(src_grid, dst_grid, (2, 2), check_contains=False, allow_masked=True, paths=self.fixture_paths,
+                         genweights=True)
         gs.write_subsets()
 
         # Merge weight files -------------------------------------------------------------------------------------------
@@ -321,8 +321,8 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         dst_grid.parent.write(dst_path)
 
         # Create the grid chunks.
-        gs = GridSplitter(src_grid, dst_grid, (3, 3), check_contains=False, src_grid_resolution=10.,
-                          paths=self.fixture_paths, genweights=True)
+        gs = GridChunker(src_grid, dst_grid, (3, 3), check_contains=False, src_grid_resolution=10.,
+                         paths=self.fixture_paths, genweights=True)
         gs.write_subsets()
 
         # Merge weight files.
@@ -343,7 +343,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
 
     @attr('slow')
     def test_insert_weighted(self):
-        gs = self.fixture_grid_splitter()
+        gs = self.fixture_grid_chunker()
 
         dst_master_path = self.get_temporary_file_path('out.nc')
         gs.dst_grid.parent.write(dst_master_path)
@@ -375,7 +375,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
             self.assertAlmostEqual(v, desired_sums[k])
 
     def test_nchunks_dst(self):
-        gc = self.fixture_grid_splitter(nchunks_dst=None)
+        gc = self.fixture_grid_chunker(nchunks_dst=None)
         self.assertIsNotNone(gc.nchunks_dst)
         self.assertEqual(gc.nchunks_dst, (10, 10))
 
@@ -383,7 +383,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
         # tdk: rename: write_subsets on grid chunker to write_chunks
         # Test a destination iterator.
         grid = mock.create_autospec(GridUnstruct)
-        grid._gs_initialize_ = mock.Mock()
+        grid._gc_initialize_ = mock.Mock()
         grid.resolution_max = 10.0
         grid.ndim = 1
         grid.wrapped_state = WrappedState.UNWRAPPED
@@ -397,7 +397,7 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
 
         grid.shape_global = (5,)
 
-        def iter_dst(grid_splitter, yield_slice=False):
+        def iter_dst(grid_chunker, yield_slice=False):
             for _ in range(3):
                 yld = mock.create_autospec(GridUnstruct, instance=True)
                 yld.wrapped_state = WrappedState.UNWRAPPED
@@ -415,5 +415,5 @@ class TestGridSplitter(AbstractTestInterface, FixtureDriverScripNetcdf):
                     yld = yld, None
                 yield yld
 
-        gs = GridSplitter(grid, grid, (100,), iter_dst=iter_dst, dst_grid_resolution=5.0, check_contains=False)
+        gs = GridChunker(grid, grid, (100,), iter_dst=iter_dst, dst_grid_resolution=5.0, check_contains=False)
         gs.write_subsets()

@@ -58,21 +58,21 @@ def create_scrip_grid(path):
     return ocgis.GridUnstruct(geoms=pgc)
 
 
-def iter_dst(grid_splitter, yield_slice=False):
+def iter_dst(grid_chunker, yield_slice=False):
     """
     Writes a chunk of the destination grid and yields an OCGIS SCRIP grid object. This is called internally by the grid
     splitter.
 
-    :param grid_splitter: A grid splitter object.
-    :type grid_splitter: :class:`ocgis.spatial.grid_splitter.GridSplitter`
+    :param grid_chunker: A grid splitter object.
+    :type grid_chunker: :class:`ocgis.spatial.grid_chunker.GridChunker`
     :param bool yield_slice: If ``True`` yield the slice that created the grid subset.
     :rtype: :class:`ocgis.GridUnstruct`
     """
-    pgc = grid_splitter.dst_grid.abstractions_available['point']
+    pgc = grid_chunker.dst_grid.abstractions_available['point']
 
     center_lat = pgc.parent['grid_center_lat'].get_value()
     ucenter_lat = np.unique(center_lat)
-    ucenter_splits = np.array_split(ucenter_lat, grid_splitter.nchunks_dst[0])
+    ucenter_splits = np.array_split(ucenter_lat, grid_chunker.nchunks_dst[0])
 
     for ctr, ucenter_split in enumerate(ucenter_splits, start=1):
         select = np.zeros_like(center_lat, dtype=bool)
@@ -97,17 +97,17 @@ def iter_dst(grid_splitter, yield_slice=False):
         yield yld
 
 
-def iter_dst2(grid_splitter, yield_slice=False):
+def iter_dst2(grid_chunker, yield_slice=False):
     """
     Writes a chunk of the destination grid and yields an OCGIS SCRIP grid object. This is called internally by the grid
     splitter.
 
-    :param grid_splitter: A grid splitter object.
-    :type grid_splitter: :class:`ocgis.spatial.grid_splitter.GridSplitter`
+    :param grid_chunker: A grid splitter object.
+    :type grid_chunker: :class:`ocgis.spatial.grid_chunker.GridChunker`
     :param bool yield_slice: If ``True`` yield the slice that created the grid subset.
     :rtype: :class:`ocgis.GridUnstruct`
     """
-    pgc = grid_splitter.dst_grid.abstractions_available['point']
+    pgc = grid_chunker.dst_grid.abstractions_available['point']
     lon_corners = pgc.parent['grid_corner_lon'].get_value()
     lat_corners = pgc.parent['grid_corner_lat'].get_value()
     bounds_global = lon_corners.min(), lat_corners.min(), lon_corners.max(), lat_corners.max()
@@ -163,12 +163,12 @@ def assert_weight_file_is_rational(weight_filename):
             # assert abs(1.0 - curr_S) <= 1e-6
 
 
-def create_grid_splitter(src_path, dst_path):
+def create_grid_chunker(src_path, dst_path):
     """Create grid splitter object from a source and destination path."""
     src_filename = os.path.split(src_path)[1]
     dst_filename = os.path.split(dst_path)[1]
 
-    grid_splitter_paths = {'wd': WD}
+    grid_chunker_paths = {'wd': WD}
     grid_abstraction = ocgis.constants.GridAbstraction.POINT
     src_grid = ocgis.RequestDataset(uri=src_path, driver='netcdf-ugrid', grid_abstraction=grid_abstraction).get().grid
 
@@ -184,10 +184,10 @@ def create_grid_splitter(src_path, dst_path):
     else:
         idest = iter_dst
 
-    gs = ocgis.GridSplitter(src_grid, dst_grid, (nchunks_dst,), paths=grid_splitter_paths,
-                            src_grid_resolution=src_grid_resolution, check_contains=False,
-                            dst_grid_resolution=dst_grid_resolution, iter_dst=idest, buffer_value=buffer_value,
-                            redistribute=True)
+    gs = ocgis.GridChunker(src_grid, dst_grid, (nchunks_dst,), paths=grid_chunker_paths,
+                           src_grid_resolution=src_grid_resolution, check_contains=False,
+                           dst_grid_resolution=dst_grid_resolution, iter_dst=idest, buffer_value=buffer_value,
+                           redistribute=True)
     return gs
 
 
@@ -214,7 +214,7 @@ def main(write_subsets=False, merge_weight_files=False):
         out_path = os.path.join(WD, dst_filename[0:-3] + '_UGRID_subset.nc')
         src_subset.write(out_path, driver='netcdf')
     else:
-        gs = create_grid_splitter(SRC_PATH, DST_PATH)
+        gs = create_grid_chunker(SRC_PATH, DST_PATH)
         if write_subsets:
             gs.write_subsets()
         if merge_weight_files:

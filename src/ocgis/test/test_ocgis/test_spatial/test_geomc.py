@@ -6,7 +6,7 @@ from shapely import wkt
 from shapely.geometry import Point, MultiPolygon, box
 from shapely.geometry.polygon import Polygon
 
-from ocgis import Variable, Dimension, vm, Field, GeometryVariable, DimensionMap, GridSplitter
+from ocgis import Variable, Dimension, vm, Field, GeometryVariable, DimensionMap, GridChunker
 from ocgis.base import AbstractOcgisObject, raise_if_empty
 from ocgis.constants import WrappedState, DMK, GridAbstraction, Topology, DriverKey
 from ocgis.driver.nc_ugrid import DriverNetcdfUGRID
@@ -248,10 +248,10 @@ class TestPointGC(TestBase, FixturePointGC):
             self.assertEqual(sub.size, 1)
             self.assertEqual(actual, desired)
 
-    def test_gs_nchunks_dst(self):
+    def test_gc_nchunks_dst(self):
         pgc = self.fixture()
-        gc = mock.create_autospec(GridSplitter)
-        actual = pgc._gs_nchunks_dst_(gc)
+        gc = mock.create_autospec(GridChunker)
+        actual = pgc._gc_nchunks_dst_(gc)
         self.assertIsNotNone(actual)
         self.assertEqual(actual, (100,))
 

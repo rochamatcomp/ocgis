@@ -230,7 +230,7 @@ Drivers
 Grid Splitter
 -------------
 
-.. autoclass:: ocgis.spatial.grid_splitter.GridSplitter
+.. autoclass:: ocgis.spatial.grid_chunker.GridChunker
     :members:
 
 Base Classes

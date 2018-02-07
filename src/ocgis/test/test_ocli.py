@@ -8,7 +8,7 @@ from click.testing import CliRunner
 from shapely.geometry import box
 
 import ocgis
-from ocgis import RequestDataset, Variable, Grid, vm, GridSplitter
+from ocgis import RequestDataset, Variable, Grid, vm, GridChunker
 from ocgis import env
 from ocgis.driver.nc_scrip import DriverScripNetcdf
 from ocgis.test.base import TestBase, attr, create_gridxy_global, create_exact_field
@@ -100,10 +100,10 @@ class Test(TestBase):
     @mock.patch('os.makedirs')
     @mock.patch('shutil.rmtree')
     @mock.patch('tempfile.mkdtemp')
-    @mock.patch('ocli.GridSplitter')
+    @mock.patch('ocli.GridChunker')
     @mock.patch('ocli.RequestDataset')
     @attr('mpi', 'slow')
-    def test_system_mock_combinations(self, mRequestDataset, mGridSplitter, m_mkdtemp, m_rmtree, m_makedirs,
+    def test_system_mock_combinations(self, mRequestDataset, mGridChunker, m_mkdtemp, m_rmtree, m_makedirs,
                                       m_write_spatial_subset):
         if ocgis.vm.size not in [1, 2]:
             raise SkipTest('ocgis.vm.size not in [1, 2]')
@@ -134,9 +134,9 @@ class Test(TestBase):
             result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
             self.assertEqual(result.exit_code, 0)
 
-            mGridSplitter.assert_called_once()
-            instance = mGridSplitter.return_value
-            call_args = mGridSplitter.call_args
+            mGridChunker.assert_called_once()
+            instance = mGridChunker.return_value
+            call_args = mGridChunker.call_args
 
             if k['wd'] == '__exclude__' and 'spatial_subset' not in new_poss:
                 actual = call_args[1]['paths']['wd']
@@ -185,7 +185,7 @@ class Test(TestBase):
             else:
                 m_write_spatial_subset.assert_not_called()
 
-            mocks = [mRequestDataset, mGridSplitter, m_mkdtemp, m_rmtree, m_makedirs, m_write_spatial_subset]
+            mocks = [mRequestDataset, mGridChunker, m_mkdtemp, m_rmtree, m_makedirs, m_write_spatial_subset]
             for m in mocks:
                 m.reset_mock()
 
@@ -204,7 +204,7 @@ class Test(TestBase):
             _ = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
 
     def assertWeightFilesEquivalent(self, global_weights_filename, merged_weights_filename):
-        # tdk: this is duplicated in TestGridSplitter. find way to remove duplicate code.
+        # tdk: this is duplicated in TestGridChunker. find way to remove duplicate code.
         nwf = RequestDataset(merged_weights_filename).get()
         gwf = RequestDataset(global_weights_filename).get()
         nwf_row = nwf['row'].get_value()
@@ -239,7 +239,7 @@ class Test(TestBase):
         path = os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_ne16np4_nomask_c110512.nc')
         field = RequestDataset(uri=path, driver=DriverScripNetcdf).create_field()
 
-        gc = GridSplitter(field.grid, field.grid)
+        gc = GridChunker(field.grid, field.grid)
         print('gc.nchunks_dst', gc.nchunks_dst)
 
     @attr('mpi')

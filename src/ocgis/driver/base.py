@@ -227,9 +227,9 @@ class AbstractDriver(AbstractOcgisObject):
         return ompi
 
     @staticmethod
-    def _gs_nchunks_dst_(grid_splitter):
-        # tdk: rename: grid_splitter variable name to grid_chunker
-        # tdk: rename: _gs_ prefix to _gc_ to be consistent with grid chunker
+    def _gc_nchunks_dst_(grid_chunker):
+        # tdk: rename: grid_chunker variable name to grid_chunker
+        # tdk: rename: _gc_ prefix to _gc_ to be consistent with grid chunker
         # tdk: order
         # tdk: doc
         raise NotImplementedError

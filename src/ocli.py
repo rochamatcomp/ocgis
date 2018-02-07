@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # tdk: DOC: add src_type and dst_type to RWG ESMF documentation
 # tdk: ENH: add defaults for nchunks_dst
-# tdk: LAST: harmonize GridSplitter param names with final interface names
+# tdk: LAST: harmonize GridChunker param names with final interface names
 import os
 import shutil
 import tempfile
@@ -11,9 +11,9 @@ import click
 from shapely.geometry import box
 
 import ocgis
-from ocgis import RequestDataset, GridSplitter, GeometryVariable
+from ocgis import RequestDataset, GridChunker, GeometryVariable
 from ocgis.base import grid_abstraction_scope
-from ocgis.constants import DriverKey, Topology, GridSplitterConstants
+from ocgis.constants import DriverKey, Topology, GridChunkerConstants
 from ocgis.spatial.spatial_subset import SpatialSubsetOperation
 from ocgis.util.logging_ocgis import ocgis_lh
 
@@ -125,9 +125,9 @@ def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, 
     esmf_kwargs = {'regrid_method': esmf_regrid_method}
 
     # Create the chunked regridding object. This is used for both chunked regridding and a regrid with a spatial subset.
-    gs = GridSplitter(rd_src, rd_dst, nchunks_dst=nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
-                      dst_grid_resolution=dst_resolution, buffer_value=buffer_distance, redistribute=True,
-                      genweights=genweights, esmf_kwargs=esmf_kwargs)
+    gs = GridChunker(rd_src, rd_dst, nchunks_dst=nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
+                     dst_grid_resolution=dst_resolution, buffer_value=buffer_distance, redistribute=True,
+                     genweights=genweights, esmf_kwargs=esmf_kwargs)
 
     # Write subsets and generate weights if requested in the grid splitter.
     # tdk: need a weight only option; currently subsets are always written and so is the merged weight file
@@ -194,7 +194,7 @@ def _write_spatial_subset_(rd_src, rd_dst, spatial_subset_path):
     ocgis_lh(logger='ocli', msg=['src_field.grid.resolution_max', src_field.grid.resolution_max], level=DEBUG)
     subset_geom = GeometryVariable.from_shapely(box(*dst_field_extent), crs=dst_field.crs, is_bbox=True)
     sub_src = sso.get_spatial_subset('intersects', subset_geom,
-                                     buffer_value=GridSplitterConstants.BUFFER_RESOLUTION_MODIFIER * src_field.grid.resolution_max,
+                                     buffer_value=GridChunkerConstants.BUFFER_RESOLUTION_MODIFIER * src_field.grid.resolution_max,
                                      optimized_bbox_subset=True)
 
     # Try to reduce the coordinate indexing for unstructured grids.
