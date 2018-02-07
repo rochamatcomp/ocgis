@@ -52,4 +52,4 @@ script:
   - source activate test-full
   - mpirun -n 2 python -c "from ocgis.test import run_mpi_nodata; run_mpi_nodata(verbose=True)"
 
-  - ocli chunked_regrid --help
+  - ocli chunked_rwg --help

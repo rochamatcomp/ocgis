@@ -62,8 +62,8 @@ def ocli():
               help='Optional working directory for output intermediate files.')
 @click.option('--persist/--no_persist', default=False,
               help='(default=False) If --persist, do not remove the working directory --wd following execution.')
-def chunked_regrid(source, destination, weight, nchunks_dst, merge, esmf_src_type, esmf_dst_type, genweights,
-                   esmf_regrid_method, spatial_subset, src_resolution, dst_resolution, buffer_distance, wd, persist):
+def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, esmf_dst_type, genweights,
+                esmf_regrid_method, spatial_subset, src_resolution, dst_resolution, buffer_distance, wd, persist):
     # tdk: REMOVE
     # ocgis.env.VERBOSE = True
     # ocgis.env.DEBUG = True
@@ -87,7 +87,7 @@ def chunked_regrid(source, destination, weight, nchunks_dst, merge, esmf_src_typ
     # and it is not a merge only operation.
     if wd is None:
         if ocgis.vm.rank == 0:
-            wd = tempfile.mkdtemp(prefix='ocgis_chunked_regrid_')
+            wd = tempfile.mkdtemp(prefix='ocgis_chunked_rwg_')
         wd = ocgis.vm.bcast(wd)
     else:
         if ocgis.vm.rank == 0:
