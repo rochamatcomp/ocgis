@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 from logging import DEBUG
+from warnings import warn
 
 import click
 from shapely.geometry import box
@@ -14,6 +15,7 @@ import ocgis
 from ocgis import RequestDataset, GridChunker, GeometryVariable
 from ocgis.base import grid_abstraction_scope
 from ocgis.constants import DriverKey, Topology, GridChunkerConstants
+from ocgis.exc import OcgWarning
 from ocgis.spatial.spatial_subset import SpatialSubsetOperation
 from ocgis.util.logging_ocgis import ocgis_lh
 
@@ -31,7 +33,8 @@ def ocli():
 @click.option('-n', '--nchunks_dst',
               help='Single integer or sequence defining the chunking decomposition for the destination grid. For '
                    'unstructured grids, provide a single value (i.e. 100). For logically rectangular grids, two values '
-                   'are needed to describe the x and y decomposition (i.e. 10,20).')
+                   'are needed to describe the x and y decomposition (i.e. 10,20). Required if --genweights and not '
+                   '--spatial_subset.')
 @click.option('--merge/--no_merge', default=True,
               help='(default=True) If --merge, merge weight file chunks into a global weight file.')
 @click.option('-w', '--weight', required=False, type=click.Path(exists=False, dir_okay=False),
@@ -50,20 +53,26 @@ def ocli():
                    'source grid. This will not work in parallel if --genweights.')
 @click.option('--src_resolution', type=float, nargs=1,
               help='Optionally overload the spatial resolution of the source grid. If provided, assumes an isomorphic '
-                   'structure.')
+                   'structure. Spatial resolution is the mean distance between grid cell center coordinates.')
 @click.option('--dst_resolution', type=float, nargs=1,
               help='Optionally overload the spatial resolution of the destination grid. If provided, assumes an '
-                   'isomorphic structure.')
+                   'isomorphic structure. Spatial resolution is the mean distance between grid cell center '
+                   'coordinates.')
 @click.option('--buffer_distance', type=float, nargs=1,
               help='Optional spatial buffer distance (in units of the destination grid) to use when subsetting '
                    'the source grid by the spatial extent of a destination grid or chunk. This is computed internally '
-                   'if not provided.')
+                   'if not provided. Useful to override if the area of influence for a source-destination mapping is '
+                   'known apriori.')
 @click.option('--wd', type=click.Path(exists=False), default=None,
-              help='Optional working directory for output intermediate files.')
+              help="Optional working directory for intermediate chunk files. Creates a directory in the system's "
+                   "temporary scratch space if not provided.")
 @click.option('--persist/--no_persist', default=False,
               help='(default=False) If --persist, do not remove the working directory --wd following execution.')
 def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, esmf_dst_type, genweights,
                 esmf_regrid_method, spatial_subset, src_resolution, dst_resolution, buffer_distance, wd, persist):
+    if not ocgis.env.USE_NETCDF4_MPI:
+        warn(OcgWarning('env.USE_NETCDF4_MPI is False. Considerable performance gains are possible if this is True. Is '
+                        'netCDF4-python built with parallel support?'))
     # tdk: REMOVE
     # ocgis.env.VERBOSE = True
     # ocgis.env.DEBUG = True

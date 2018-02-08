@@ -235,6 +235,7 @@ class Test(TestBase):
 
     def test_tdk_scrip_splits(self):
         """Test SCRIP calculation of desired chunks."""
+        raise SkipTest
         # path = os.path.expanduser('~/l/i49-ugrid-cesm/0.9x1.25_c110307.nc')
         path = os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_ne16np4_nomask_c110512.nc')
         field = RequestDataset(uri=path, driver=DriverScripNetcdf).create_field()
