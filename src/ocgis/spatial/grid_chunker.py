@@ -462,8 +462,6 @@ class GridChunker(AbstractOcgisObject):
                                                                            optimized_bbox_subset=self.optimized_bbox_subset,
                                                                            return_slice=True)
             ocgis_lh(logger='grid_chunker', msg='finished "self.src_grid.get_intersects"', level=logging.DEBUG)
-            # tdk: RESUME: why is this subset not working??
-            # tdk: need to use scrip bounds to get appropriate extent for the destination
 
             # Reload the data using a new source index distribution.
             if hasattr(src_grid_subset, 'reduce_global'):
