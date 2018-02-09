@@ -82,11 +82,11 @@ class AbstractSpatialObject(AbstractInterfaceObject):
     def wrapped_state(self, value):
         self._wrapped_state = value
 
-    def unwrap(self):
-        self._wrap_or_unwrap_(WrapAction.UNWRAP)
+    def unwrap(self, force=False):
+        self._wrap_or_unwrap_(WrapAction.UNWRAP, force=force)
 
-    def wrap(self):
-        self._wrap_or_unwrap_(WrapAction.WRAP)
+    def wrap(self, force=False):
+        self._wrap_or_unwrap_(WrapAction.WRAP, force=force)
 
     def _get_field_(self):
         return self.parent
@@ -96,12 +96,12 @@ class AbstractSpatialObject(AbstractInterfaceObject):
         from ocgis import Field
         return Field
 
-    def _wrap_or_unwrap_(self, action):
+    def _wrap_or_unwrap_(self, action, force=False):
         raise_if_empty(self)
         if self.crs is None or not self.crs.is_wrappable:
             raise TypeError("Coordinate system may not be wrapped/unwrapped.")
         else:
-            self.crs.wrap_or_unwrap(action, self)
+            self.crs.wrap_or_unwrap(action, self, force=force)
 
 
 @six.add_metaclass(abc.ABCMeta)
