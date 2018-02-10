@@ -52,12 +52,15 @@ class Field(VariableCollection):
     :param crs: (``='auto'``) A coordinate reference system variable. If ``'auto'``, use the coordinate system from
      the ``grid`` or ``geom``. ``geom`` is given preference if both are present.
     :type crs: :class:`str` | ``None`` | :class:`~ocgis.variable.crs.AbstractCRS`
-    :param str grid_abstraction: See keyword argument ``abstraction`` for :class:`~ocgis.Grid`.
     :param str format_time: See keyword argument ``format_time`` for :class:`~ocgis.TemporalVariable`.
+    :param str grid_abstraction: See keyword argument ``abstraction`` for :class:`~ocgis.Grid`.
+    :param grid_is_isomporphic: (``='auto'``) If ``True``, the grid is isomorphic with repeated, topologically adjancent
+     cells (i.e. a logically rectangular grid). If ``False``, the grid elements change shapes (i.e. boundaries like a
+     watershed). If ``'auto'``, let the driver determine the grid default.
+    :type grid_is_isomorphic: bool | str
     """
 
     def __init__(self, **kwargs):
-        # tdk: DOC: is_isomorphic
         kwargs = kwargs.copy()
         dimension_map = kwargs.pop('dimension_map', None)
 

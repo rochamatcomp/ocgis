@@ -499,8 +499,6 @@ class ConversionTarget(Enum):
 class GridChunkerConstants(object):
     BUFFER_RESOLUTION_MODIFIER = 2.
 
-    # BUFFER_RESOLUTION_MODIFIER = 3. #tdk:REMOVE
-
     class IndexFile(object):
         NAME_DESTINATION_VARIABLE = 'grid_chunker_destination'
         NAME_INDEX_VARIABLE = 'grid_chunker_index'

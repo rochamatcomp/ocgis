@@ -46,19 +46,6 @@ class AbstractDriver(AbstractOcgisObject):
         self._dimension_map_raw = None
         self._dist = None
 
-    @classmethod
-    def get_esmf_filetype(cls):
-        # tdk: ORDER
-        # tdk: DOC
-        import ESMF
-        return getattr(ESMF.constants.FileFormat, cls._esmf_filetype)
-
-    @classmethod
-    def get_esmf_grid_class(cls):
-        # tdk: ORDER
-        # tdk: DOC
-        return constants.ESMFGridClass.get_esmf_class(cls._esmf_grid_class)
-
     def __eq__(self, other):
         return self.key == other.key
 
@@ -127,6 +114,19 @@ class AbstractDriver(AbstractOcgisObject):
          converted to all output formats.
         :rtype: list[str, ...]
         """
+
+    @staticmethod
+    def array_resolution(value, axis):
+        """
+        Optionally overloaded by subclasses to calculate the "resolution" of an array. This makes the most sense in the
+        context of coordinate variables. This method should return a float resolution.
+
+        :param value: The value array target.
+        :type value: :class:`numpy.ndarray`
+        :param int axis: The target axis for the resolution calculation.
+        :rtype: float
+        """
+        raise NotImplementedError
 
     @classmethod
     def close(cls, obj, rd=None):
@@ -225,14 +225,6 @@ class AbstractDriver(AbstractOcgisObject):
 
         ompi.update_dimension_bounds()
         return ompi
-
-    @staticmethod
-    def _gc_nchunks_dst_(grid_chunker):
-        # tdk: rename: grid_chunker variable name to grid_chunker
-        # tdk: rename: _gc_ prefix to _gc_ to be consistent with grid chunker
-        # tdk: order
-        # tdk: doc
-        raise NotImplementedError
 
     def create_field(self, *args, **kwargs):
         """
@@ -408,6 +400,26 @@ class AbstractDriver(AbstractOcgisObject):
         if first:
             lines.append('}')
         return lines
+
+    @classmethod
+    def get_esmf_filetype(cls):
+        # tdk: RENAME: get_esmf_fileformat; also rename cls._esmf_filetype to cls._esmf_fileformat
+        """
+        Get the ESMF file format associated with the driver. The string should be an accessible attribute on :attr:`ESMF.constants.FileFormat`.
+
+        :rtype: str
+        """
+        import ESMF
+        return getattr(ESMF.constants.FileFormat, cls._esmf_filetype)
+
+    @classmethod
+    def get_esmf_grid_class(cls):
+        """
+        Get the ESMF grid class.
+
+        :rtype: :class:`ESMF.Grid` | :class:`ESMF.Mesh`
+        """
+        return constants.ESMFGridClass.get_esmf_class(cls._esmf_grid_class)
 
     @staticmethod
     def get_grid(field):
@@ -673,9 +685,25 @@ class AbstractDriver(AbstractOcgisObject):
             cls._write_variable_collection_main_(vc, opened_or_path, write_mode, **kwargs)
 
     @staticmethod
-    def array_resolution(value, axis):
-        # tdk: doc
-        # tdk: order
+    def _close_(obj):
+        """
+        Close and finalize the open file object.
+        """
+        obj.close()
+
+    @staticmethod
+    def _gc_nchunks_dst_(grid_chunker):
+        """
+        Calculate the default chunking decomposition for a destination grid in the grid chunker. The decomposition should
+        be a tuple of integers.
+
+        >>> (10, 5)
+        >>> (12,)
+
+        :param grid_chunker: The grid chunker object.
+        :type grid_chunker: :class:`~ocgis.spatial.grid_chunker.GridChunker`
+        :rtype: tuple
+        """
         raise NotImplementedError
 
     @classmethod
@@ -702,14 +730,6 @@ class AbstractDriver(AbstractOcgisObject):
     @classmethod
     def _get_field_write_target_(cls, field):
         return field
-
-    @staticmethod
-    def _close_(obj):
-        """
-        Close and finalize the open file object.
-        """
-
-        obj.close()
 
     @abc.abstractmethod
     def _init_variable_from_source_main_(self, variable_object, variable_metadata):

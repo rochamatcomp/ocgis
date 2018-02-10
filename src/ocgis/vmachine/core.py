@@ -31,14 +31,6 @@ class OcgVM(AbstractOcgisObject):
         else:
             is_dummy = False
 
-        # tdk: REMOVE
-        # if hasattr(self._comm, 'Get_group'):
-        #     is_dummy = False
-        # else:
-        #     is_dummy = True
-
-        self._is_dummy = is_dummy
-
     def __del__(self):
         try:
             self.finalize()
