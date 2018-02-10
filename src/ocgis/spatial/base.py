@@ -292,11 +292,27 @@ class AbstractSpatialContainer(AbstractContainer, AbstractOperationsSpatialObjec
 
 @six.add_metaclass(abc.ABCMeta)
 class AbstractXYZSpatialContainer(AbstractSpatialContainer):
-    # tdk: doc
+    """
+    Abstract container for X, Y, and optionally Z coordinate variables. If ``x`` and ``y`` are not provided, then
+    ``parent`` is required.
+
+    :keyword x: (``=None``) X-coordinate variable
+    :type x: :class:`ocgis.Variable`
+    :keyword y: (``=None``) Y-coordinate variable
+    :type y: :class:`ocgis.Variable`
+    :keyword parent: (``=None``) Parent field object
+    :type parent: :class:`ocgis.Field`
+    :keyword mask: (``=None``) Mask variable
+    :type mask: :class:`ocgis.Variable`
+    :keyword pos: (``=(0, 1)``) Axis values for n-dimensional coordinate arrays
+    :type pos: tuple
+    :keyword is_isomorphic: See ``grid_is_isomorphic`` documentation for :class:`ocgis.Field`
+    """
+
     def __init__(self, **kwargs):
         kwargs = kwargs.copy()
-        x = kwargs.pop(KeywordArgument.X)
-        y = kwargs.pop(KeywordArgument.Y)
+        x = kwargs.pop(KeywordArgument.X, None)
+        y = kwargs.pop(KeywordArgument.Y, None)
         z = kwargs.pop(KeywordArgument.Z, None)
         mask = kwargs.pop(KeywordArgument.MASK, None)
         pos = kwargs.pop(KeywordArgument.POS, (0, 1))
@@ -354,10 +370,6 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         if is_isomorphic != 'auto':
             self.is_isomorphic = is_isomorphic
 
-    def _gc_iter_dst_grid_slices_(self, grid_chunker):
-        #tdk: ORDER
-        return self.driver._gc_iter_dst_grid_slices_(grid_chunker)
-
     @property
     def archetype(self):
         """
@@ -395,7 +407,7 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
 
     @property
     def is_isomorphic(self):
-        #tdk: doc
+        """See ``grid_is_isomorphic`` documentation for :class:`ocgis.Field`"""
         return self.dimension_map.get_property(DMK.IS_ISOMORPHIC)
 
     @is_isomorphic.setter
@@ -415,7 +427,11 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
 
     @property
     def resolution(self):
-        # tdk: DOC
+        """
+        Returns the average spatial along resolution along the ``x`` and ``y`` dimensions.
+
+        :rtype: float
+        """
         if self.is_isomorphic:
             if 1 in self.shape:
                 if self.shape[0] != 1:
@@ -433,22 +449,34 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
 
     @property
     def resolution_max(self):
-        #tdk: DOC
+        """
+        Returns the maximum spatial resolution between the ``x`` and ``y`` coordinate variables.
+
+        :rtype: float
+        """
         return max([self.resolution_x, self.resolution_y])
 
     @property
     def resolution_x(self):
-        # tdk: DOC
+        """
+        Returns the resolution ox ``x`` variable.
+
+        :rtype: float
+        """
         return self.driver.array_resolution(self.x.get_value(), 1)
 
     @property
     def resolution_y(self):
-        # tdk: DOC
+        """
+        Returns the resolution ox ``y`` variable.
+
+        :rtype: float
+        """
         return self.driver.array_resolution(self.y.get_value(), 0)
 
     @property
     def driver(self):
-        # tdk: this should be a generic property on all parented collections like this
+        # tdk: HACK: this should be a generic property on all parented collections like this
         return self.parent.driver
 
     @property
@@ -560,15 +588,21 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
 
         self.crs.format_spatial_object(self, is_transform=True)
 
-    def _get_canonical_dimension_map_(self, field=None, create=False):
-        if field is None:
-            field = self.parent
-        return field.dimension_map.get_topology(self.topology, create=create)
-
     def _create_dimension_map_property_(self, entry_key, nullable=False):
         dimension_map = self._get_canonical_dimension_map_()
         ret = dimension_map.get_variable(entry_key, parent=self.parent, nullable=nullable)
         return ret
+
+    def _gc_iter_dst_grid_slices_(self, grid_chunker):
+        return self.driver._gc_iter_dst_grid_slices_(grid_chunker)
+
+    def _gc_nchunks_dst_(self, grid_chunker):
+        return self.driver._gc_nchunks_dst_(grid_chunker)
+
+    def _get_canonical_dimension_map_(self, field=None, create=False):
+        if field is None:
+            field = self.parent
+        return field.dimension_map.get_topology(self.topology, create=create)
 
     def _get_xyz_from_parent_(self, parent):
         dmap = self._get_canonical_dimension_map_(field=parent, create=False)
@@ -576,9 +610,6 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         y = dmap.get_variable(DMK.Y, parent=parent)
         z = dmap.get_variable(DMK.LEVEL, parent=parent, nullable=True)
         return x, y, z
-
-    def _gc_nchunks_dst_(self, grid_chunker):
-        return self.driver._gc_nchunks_dst_(grid_chunker)
 
     def _set_xyz_on_dimension_map_(self, x, y, z, pos, parent=None):
         if x.ndim == 2:

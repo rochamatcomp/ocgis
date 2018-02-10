@@ -94,15 +94,16 @@ class RequestDataset(AbstractRequestObject):
      for the associated driver key are also accepted.
     :type driver: str | :class:`~ocgis.driver.base.AbstractDriver`
 
-    #tdk: DOC: update driver table
-    ============= ================= =============================================
-    Value         File Extension(s) Description
-    ============= ================= =============================================
-    ``'netcdf-cf' ``'nc'``          A netCDF file using a CF metadata convention.
-    ``'netcdf' `` ``'nc'``          A netCDF file with no metadata convention.
-    ``'vector'``  ``'shp'``         An ESRI Shapefile or other vector source.
-    ``'csv'``     ``'csv'``         A CSV file.
-    ============= ================= =============================================
+    ================== ================= ======================================================================
+    Value              File Extension(s) Description
+    ================== ================= ======================================================================
+    ``'netcdf-cf'      ``'nc'``          A netCDF file using a CF-Grid metadata convention.
+    ``'netcdf-ugrid'`` ``'nc'``          A netCDF file using the UGRID (Unstructured Grid) metadata convention.
+    ``'netcdf-scrip'`` ``'nc'``          A netCDF file using the SCRIP metadata convention.
+    ``'netcdf' ``      ``'nc'``          A netCDF file with no metadata convention.
+    ``'vector'``       ``'shp'``         An ESRI Shapefile or other vector source.
+    ``'csv'``          ``'csv'``         A CSV file.
+    ================== ================= ======================================================================
 
     :param str field_name: Name of the requested field in the output collection. If ``None``, defaults to the variable
      name or names joined by ``_``.
@@ -132,6 +133,7 @@ class RequestDataset(AbstractRequestObject):
     .. _time calendar: http://netcdf4-python.googlecode.com/svn/trunk/docs/netCDF4-module.html#num2date
     :param dict driver_kwargs: Any keyword arguments to driver creation. See the driver documentation for a description
      of accepted parameters. These are often format-specific and not easily generalized.
+    :param grid_is_isomorphic: See documentation for :class:`ocgis.Field`
     """
 
     def __init__(self, uri=None, variable=None, units=None, time_range=None, time_region=None,
@@ -140,7 +142,6 @@ class RequestDataset(AbstractRequestObject):
                  dimension_map=None, field_name=None, driver=None, regrid_source=True, regrid_destination=False,
                  metadata=None, format_time=True, opened=None, uid=None, rename_variable=None, predicate=None,
                  rotated_pole_priority=False, driver_kwargs=None):
-        # tdk: DOC: grid_is_isomorphic
         self._is_init = True
 
         self._field_name = field_name
