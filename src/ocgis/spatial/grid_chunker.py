@@ -731,7 +731,7 @@ def create_esmf_field(*args):
 
 def create_esmf_grid(filename, grid, esmf_kwargs):
     # tdk: what to do with is_sphere?
-    filetype = grid.driver.get_esmf_filetype()
+    filetype = grid.driver.get_esmf_fileformat()
     klass = grid.driver.get_esmf_grid_class()
 
     if klass == ESMF.Grid:

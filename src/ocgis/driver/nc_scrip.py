@@ -12,7 +12,7 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
     # tdk: DOC
     # tdk: RENAME: DriverNetcdfSCRIP
 
-    _esmf_filetype = 'SCRIP'
+    _esmf_fileformat = 'SCRIP'
     key = DriverKey.NETCDF_SCRIP
     _default_crs = env.DEFAULT_COORDSYS
 

@@ -37,7 +37,7 @@ class AbstractDriver(AbstractOcgisObject):
     _default_crs = None
     _priority = False
     common_extension = None  # The standard file extension commonly associated with the canonical file format.
-    _esmf_filetype = None  # The associated ESMF file type. This may be None.
+    _esmf_fileformat = None  # The associated ESMF file type. This may be None.
     _esmf_grid_class = constants.ESMFGridClass.GRID  # The ESMF grid class type.
 
     def __init__(self, rd):
@@ -402,15 +402,14 @@ class AbstractDriver(AbstractOcgisObject):
         return lines
 
     @classmethod
-    def get_esmf_filetype(cls):
-        # tdk: RENAME: get_esmf_fileformat; also rename cls._esmf_filetype to cls._esmf_fileformat
+    def get_esmf_fileformat(cls):
         """
         Get the ESMF file format associated with the driver. The string should be an accessible attribute on :attr:`ESMF.constants.FileFormat`.
 
         :rtype: str
         """
         import ESMF
-        return getattr(ESMF.constants.FileFormat, cls._esmf_filetype)
+        return getattr(ESMF.constants.FileFormat, cls._esmf_fileformat)
 
     @classmethod
     def get_esmf_grid_class(cls):
