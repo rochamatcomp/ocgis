@@ -705,7 +705,9 @@ def update_esmf_kwargs(target):
         target['regrid_method'] = ESMF.RegridMethod.CONSERVE
     else:
         rmap = {'CONSERVE': ESMF.RegridMethod.CONSERVE,
-                'BILINEAR': ESMF.RegridMethod.BILINEAR}
+                'BILINEAR': ESMF.RegridMethod.BILINEAR,
+                'NEAREST_STOD': ESMF.RegridMethod.NEAREST_STOD,
+                'PATCH': ESMF.RegridMethod.PATCH}
         regrid_method = target.get('regrid_method')
         if regrid_method not in rmap.values():
             try:
@@ -765,6 +767,7 @@ def get_grid_object(obj):
         res = obj.grid
     else:
         raise NotImplementedError(obj)
+
     return res
 
 

@@ -420,7 +420,7 @@ class Test(TestBase):
 
         runner = CliRunner()
         cli_args = ['chunked_rwg', '--source', source, '--destination', destination, '--wd', wd, '--spatial_subset',
-                    '--weight', weight, '--esmf_regrid_method', 'BILINEAR', '--persist']
+                    '--weight', weight, '--esmf_regrid_method', '', '--persist']
         result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
 

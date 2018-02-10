@@ -46,8 +46,8 @@ def ocli():
 @click.option('--genweights/--no_genweights', default=True,
               help='(default=True) Generate weights using ESMF for each source and destination subset.')
 @click.option('--esmf_regrid_method', type=str, nargs=1, default='CONSERVE',
-              help='(default=CONSERVE) The ESMF regrid method. Only applicable with --genweights. Supports CONSERVE '
-                   'and BILINEAR.')
+              help='(default=CONSERVE) The ESMF regrid method. Only applicable with --genweights. Supports CONSERVE, '
+                   'BILINEAR. PATCH, and NEAREST_STOD.')
 @click.option('--spatial_subset/--no_spatial_subset', default=False,
               help='(default=False) Optionally subset the destination grid by the bounding box spatial extent of the '
                    'source grid. This will not work in parallel if --genweights.')
