@@ -121,7 +121,7 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         gs = GridChunker(src_grid, dst_grid, (3, 3), check_contains=False, src_grid_resolution=10.,
                          paths=self.fixture_paths, genweights=genweights)
 
-        gs.write_subsets()
+        gs.write_chunks()
 
         actual = gs.create_full_path_from_template('src_template', index=1)
         actual = RequestDataset(actual).get()
@@ -145,7 +145,7 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         actual = list(gs.iter_dst_grid_slices())
         self.assertEqual(actual, desired)
 
-        gs.write_subsets()
+        gs.write_chunks()
 
         if vm.rank == 0:
             rank_sums = []
@@ -251,7 +251,7 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         src_grid = create_gridxy_global()
         dst_grid = self.fixture_driver_scrip_netcdf_field().grid
         gs = GridChunker(src_grid, dst_grid, (3,), paths={'wd': self.current_dir_output})
-        gs.write_subsets()
+        gs.write_chunks()
         self.assertEqual(len(os.listdir(self.current_dir_output)), 7)
 
     def test_system_splitting_unstructured_no_weights(self):
@@ -281,7 +281,7 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
 
         gs = GridChunker(src_grid, dst_grid, (2, 2), check_contains=False, allow_masked=True, paths=self.fixture_paths,
                          genweights=True)
-        gs.write_subsets()
+        gs.write_chunks()
 
         # Merge weight files -------------------------------------------------------------------------------------------
 
@@ -322,7 +322,7 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         # Create the grid chunks.
         gs = GridChunker(src_grid, dst_grid, (3, 3), check_contains=False, src_grid_resolution=10.,
                          paths=self.fixture_paths, genweights=True)
-        gs.write_subsets()
+        gs.write_chunks()
 
         # Merge weight files.
         mwf = self.get_temporary_file_path('merged_weight_file.nc')
@@ -359,7 +359,7 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         for data_variable in dst_master.data_variables:
             self.assertEqual(data_variable.get_value().sum(), 0)
 
-        gs.write_subsets()
+        gs.write_chunks()
 
         index_path = gs.create_full_path_from_template('index_file')
         gs.insert_weighted(index_path, self.current_dir_output, dst_master_path)
@@ -378,7 +378,7 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         self.assertIsNotNone(gc.nchunks_dst)
         self.assertEqual(gc.nchunks_dst, (10, 10))
 
-    def test_write_subsets(self):
+    def test_write_chunks(self):
         # Test a destination iterator.
         grid = mock.create_autospec(GridUnstruct)
         grid._gc_initialize_ = mock.Mock()
@@ -414,4 +414,4 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
                 yield yld
 
         gs = GridChunker(grid, grid, (100,), iter_dst=iter_dst, dst_grid_resolution=5.0, check_contains=False)
-        gs.write_subsets()
+        gs.write_chunks()

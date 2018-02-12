@@ -133,7 +133,7 @@ def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, 
     # Write subsets and generate weights if requested in the grid splitter.
     # tdk: LAST-ENH need a weight only option; currently subsets are always written and so is the merged weight file
     if not spatial_subset and nchunks_dst is not None:
-        gs.write_subsets()
+        gs.write_chunks()
     else:
         if spatial_subset:
             source = spatial_subset_path
@@ -151,7 +151,7 @@ def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, 
 
     # elif not spatial_subset:
     #     # Write the subsets. Only do this if this is not a merge operation.
-    #     gs.write_subsets()
+    #     gs.write_chunks()
     # else:
     #     assert spatial_subset
     #     assert not merge

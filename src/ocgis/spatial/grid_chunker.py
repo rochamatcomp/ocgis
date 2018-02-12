@@ -516,45 +516,7 @@ class GridChunker(AbstractOcgisObject):
 
             yield yld
 
-    def write_esmf_weights(self, src_path, dst_path, wgt_path, src_grid=None, dst_grid=None):
-        """
-        Write ESMF regridding weights for a source and destination filename combination.
-
-        :param str src_path: Full path to source file
-        :param str dst_path: Full path to destination file
-        :param str wgt_path: Path to output weight file
-        :param src_grid: If provided, use this source grid for identifying ESMF parameters
-        :type src_grid: :class:`ocgis.spatial.grid.AbstractGrid`
-        :param dst_grid: If provided, use this destination grid for identifying ESMF parameters
-        :type dst_grid: :class:`ocgis.spatial.grid.AbstractGrid`
-        """
-
-        ocgis_lh(logger='grid_chunker', msg='entering write_esmf_weights', level=logging.DEBUG)
-        assert wgt_path is not None
-        if src_grid is None:
-            src_grid = self.src_grid
-        if dst_grid is None:
-            dst_grid = self.dst_grid
-        srcfield, srcgrid = create_esmf_field(src_path, src_grid, self.esmf_kwargs)
-        ocgis_lh(logger='grid_chunker', msg='finished creating source ESMPy field', level=logging.DEBUG)
-        dstfield, dstgrid = create_esmf_field(dst_path, dst_grid, self.esmf_kwargs)
-        ocgis_lh(logger='grid_chunker', msg='finished creating destination ESMPy field', level=logging.DEBUG)
-        regrid = None
-
-        try:
-            regrid = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path, **self.esmf_kwargs)
-        finally:
-            to_destroy = [regrid, srcgrid, srcfield, dstgrid, dstfield]
-            for t in to_destroy:
-                if t is not None:
-                    t.destroy()
-            del regrid
-            del srcgrid
-            del srcfield
-            del dstgrid
-            del dstfield
-
-    def write_subsets(self):
+    def write_chunks(self):
         """
         Write grid subsets to netCDF files using the provided filename templates. This will also generate ESMF
         regridding weights for each subset if requested.
@@ -663,6 +625,44 @@ class GridChunker(AbstractOcgisObject):
                 vc.write(index_path)
 
         vm.barrier()
+
+    def write_esmf_weights(self, src_path, dst_path, wgt_path, src_grid=None, dst_grid=None):
+        """
+        Write ESMF regridding weights for a source and destination filename combination.
+
+        :param str src_path: Full path to source file
+        :param str dst_path: Full path to destination file
+        :param str wgt_path: Path to output weight file
+        :param src_grid: If provided, use this source grid for identifying ESMF parameters
+        :type src_grid: :class:`ocgis.spatial.grid.AbstractGrid`
+        :param dst_grid: If provided, use this destination grid for identifying ESMF parameters
+        :type dst_grid: :class:`ocgis.spatial.grid.AbstractGrid`
+        """
+
+        ocgis_lh(logger='grid_chunker', msg='entering write_esmf_weights', level=logging.DEBUG)
+        assert wgt_path is not None
+        if src_grid is None:
+            src_grid = self.src_grid
+        if dst_grid is None:
+            dst_grid = self.dst_grid
+        srcfield, srcgrid = create_esmf_field(src_path, src_grid, self.esmf_kwargs)
+        ocgis_lh(logger='grid_chunker', msg='finished creating source ESMPy field', level=logging.DEBUG)
+        dstfield, dstgrid = create_esmf_field(dst_path, dst_grid, self.esmf_kwargs)
+        ocgis_lh(logger='grid_chunker', msg='finished creating destination ESMPy field', level=logging.DEBUG)
+        regrid = None
+
+        try:
+            regrid = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path, **self.esmf_kwargs)
+        finally:
+            to_destroy = [regrid, srcgrid, srcfield, dstgrid, dstfield]
+            for t in to_destroy:
+                if t is not None:
+                    t.destroy()
+            del regrid
+            del srcgrid
+            del srcfield
+            del dstgrid
+            del dstfield
 
     def _gc_remap_weight_variable_(self, ii, wvn, odata, src_indices, dst_indices, ifile, gidx,
                                    split_grids_directory=None):
