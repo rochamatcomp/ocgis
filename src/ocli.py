@@ -1,11 +1,8 @@
 #!/usr/bin/env python
-# tdk: DOC: add src_type and dst_type to RWG ESMF documentation
-# tdk: ENH: add defaults for nchunks_dst
-# tdk: LAST: harmonize GridChunker param names with final interface names
+
 import os
 import shutil
 import tempfile
-from logging import DEBUG
 from warnings import warn
 
 import click
@@ -17,7 +14,9 @@ from ocgis.base import grid_abstraction_scope
 from ocgis.constants import DriverKey, Topology, GridChunkerConstants
 from ocgis.exc import OcgWarning
 from ocgis.spatial.spatial_subset import SpatialSubsetOperation
-from ocgis.util.logging_ocgis import ocgis_lh
+
+
+# tdk: LAST-ENH: add defaults for nchunks_dst
 
 
 @click.group()
@@ -73,11 +72,6 @@ def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, 
     if not ocgis.env.USE_NETCDF4_MPI:
         warn(OcgWarning('env.USE_NETCDF4_MPI is False. Considerable performance gains are possible if this is True. Is '
                         'netCDF4-python built with parallel support?'))
-    # tdk: REMOVE
-    # ocgis.env.VERBOSE = True
-    # ocgis.env.DEBUG = True
-    # ocgis.env.configure_logging(with_header=False)
-    # tdk: /REMOVE
 
     if nchunks_dst is not None:
         # Format the chunking decomposition from its string representation.
@@ -117,14 +111,12 @@ def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, 
     rd_src = _create_request_dataset_(source, esmf_src_type)
     rd_dst = _create_request_dataset_(destination, esmf_dst_type)
 
-    # tdk: need option to spatially subset and apply weights
     # Execute a spatial subset if requested.
     paths = None
     if spatial_subset:
-        # tdk: should this be a parameter?
+        # tdk: LAST-ENH: should this be a parameter?
         spatial_subset_path = os.path.join(wd, 'spatial_subset.nc')
         _write_spatial_subset_(rd_src, rd_dst, spatial_subset_path)
-        # tdk: /hack
     # Only split grids if a spatial subset is not requested.
     else:
         # Update the paths to use for the grid.
@@ -139,7 +131,7 @@ def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, 
                      genweights=genweights, esmf_kwargs=esmf_kwargs)
 
     # Write subsets and generate weights if requested in the grid splitter.
-    # tdk: need a weight only option; currently subsets are always written and so is the merged weight file
+    # tdk: LAST-ENH need a weight only option; currently subsets are always written and so is the merged weight file
     if not spatial_subset and nchunks_dst is not None:
         gs.write_subsets()
     else:
@@ -178,8 +170,6 @@ def _create_request_dataset_(path, esmf_type):
              'UGRID': DriverKey.NETCDF_UGRID,
              'SCRIP': DriverKey.NETCDF_SCRIP}
     odriver = edmap[esmf_type]
-    # tdk: HACK: the abstraction target should be determine by is_isomorphic=True and point is available. this requires
-    # tdk: HACK:  an is_isomorphic argument to be passed through the request dataset
     return RequestDataset(uri=path, driver=odriver, grid_abstraction='point')
 
 
@@ -192,7 +182,6 @@ def _is_subdir_(path, potential_subpath):
 
 
 def _write_spatial_subset_(rd_src, rd_dst, spatial_subset_path):
-    # tdk: HACK: this is sensitive and should be replaced with more robust code. there is also an opportunity to simplify subsetting by incorporating the spatial subset operation object into subsetting itself.
     src_field = rd_src.create_field()
     dst_field = rd_dst.create_field()
     sso = SpatialSubsetOperation(src_field)
@@ -200,11 +189,9 @@ def _write_spatial_subset_(rd_src, rd_dst, spatial_subset_path):
     with grid_abstraction_scope(dst_field.grid, Topology.POLYGON):
         dst_field_extent = dst_field.grid.extent_global
 
-    ocgis_lh(logger='ocli', msg=['src_field.grid.resolution_max', src_field.grid.resolution_max], level=DEBUG)
     subset_geom = GeometryVariable.from_shapely(box(*dst_field_extent), crs=dst_field.crs, is_bbox=True)
-    sub_src = sso.get_spatial_subset('intersects', subset_geom,
-                                     buffer_value=GridChunkerConstants.BUFFER_RESOLUTION_MODIFIER * src_field.grid.resolution_max,
-                                     optimized_bbox_subset=True)
+    buffer_value = GridChunkerConstants.BUFFER_RESOLUTION_MODIFIER * src_field.grid.resolution_max
+    sub_src = sso.get_spatial_subset('intersects', subset_geom, buffer_value=buffer_value, optimized_bbox_subset=True)
 
     # Try to reduce the coordinate indexing for unstructured grids.
     try:

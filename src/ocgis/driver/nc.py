@@ -343,25 +343,8 @@ class DriverNetcdfCF(AbstractDriverNetcdfCF):
     _priority = True
 
     @staticmethod
-    def _gc_iter_dst_grid_slices_(grid_chunker):
-        #tdk: ORDER
-        # tdk: DOC: need superclass methods
-        slice_store = []
-        ydim_name = grid_chunker.dst_grid.dimensions[0].name
-        xdim_name = grid_chunker.dst_grid.dimensions[1].name
-        dst_grid_shape_global = grid_chunker.dst_grid.shape_global
-        for idx in range(grid_chunker.dst_grid.ndim):
-            splits = grid_chunker.nchunks_dst[idx]
-            size = dst_grid_shape_global[idx]
-            slices = create_slices_for_dimension(size, splits)
-            slice_store.append(slices)
-        for slice_y, slice_x in itertools.product(*slice_store):
-            yield {ydim_name: create_slice_from_tuple(slice_y),
-                   xdim_name: create_slice_from_tuple(slice_x)}
-
-    @staticmethod
     def array_resolution(value, axis):
-        # tdk: doc
+        """See :meth:`ocgis.driver.base.AbstractDriver#array_resolution`"""
         if value.size == 1:
             return 0.0
         else:
@@ -456,6 +439,21 @@ class DriverNetcdfCF(AbstractDriverNetcdfCF):
         except GridDeficientError:
             ret = None
         return ret
+
+    @staticmethod
+    def _gc_iter_dst_grid_slices_(grid_chunker):
+        slice_store = []
+        ydim_name = grid_chunker.dst_grid.dimensions[0].name
+        xdim_name = grid_chunker.dst_grid.dimensions[1].name
+        dst_grid_shape_global = grid_chunker.dst_grid.shape_global
+        for idx in range(grid_chunker.dst_grid.ndim):
+            splits = grid_chunker.nchunks_dst[idx]
+            size = dst_grid_shape_global[idx]
+            slices = create_slices_for_dimension(size, splits)
+            slice_store.append(slices)
+        for slice_y, slice_x in itertools.product(*slice_store):
+            yield {ydim_name: create_slice_from_tuple(slice_y),
+                   xdim_name: create_slice_from_tuple(slice_x)}
 
     @classmethod
     def _get_field_write_target_(cls, field):

@@ -30,6 +30,7 @@ class OcgVM(AbstractOcgisObject):
             is_dummy = True
         else:
             is_dummy = False
+        self._is_dummy = is_dummy
 
     def __del__(self):
         try:

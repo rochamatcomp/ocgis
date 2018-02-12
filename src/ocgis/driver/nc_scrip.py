@@ -9,8 +9,11 @@ from ocgis.vmachine.mpi import hgather
 
 
 class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
-    # tdk: DOC
-    # tdk: RENAME: DriverNetcdfSCRIP
+    """
+    Driver for the SCRIP NetCDF structured and unstructured grid format. SCRIP is a legacy format that is the primary
+    precursor to NetCDF-CF convention. By default, SCRIP grids are treated as unstructured data creating an unstructured
+    grid.
+    """
 
     _esmf_fileformat = 'SCRIP'
     key = DriverKey.NETCDF_SCRIP
