@@ -516,11 +516,49 @@ class GridChunker(AbstractOcgisObject):
 
             yield yld
 
+    def write_esmf_weights(self, src_path, dst_path, wgt_path, src_grid=None, dst_grid=None):
+        """
+        Write ESMF regridding weights for a source and destination filename combination.
+
+        :param str src_path: Full path to source file
+        :param str dst_path: Full path to destination file
+        :param str wgt_path: Path to output weight file
+        :param src_grid: If provided, use this source grid for identifying ESMF parameters
+        :type src_grid: :class:`ocgis.spatial.grid.AbstractGrid`
+        :param dst_grid: If provided, use this destination grid for identifying ESMF parameters
+        :type dst_grid: :class:`ocgis.spatial.grid.AbstractGrid`
+        """
+
+        ocgis_lh(logger='grid_chunker', msg='entering write_esmf_weights', level=logging.DEBUG)
+        assert wgt_path is not None
+        if src_grid is None:
+            src_grid = self.src_grid
+        if dst_grid is None:
+            dst_grid = self.dst_grid
+        srcfield, srcgrid = create_esmf_field(src_path, src_grid, self.esmf_kwargs)
+        ocgis_lh(logger='grid_chunker', msg='finished creating source ESMPy field', level=logging.DEBUG)
+        dstfield, dstgrid = create_esmf_field(dst_path, dst_grid, self.esmf_kwargs)
+        ocgis_lh(logger='grid_chunker', msg='finished creating destination ESMPy field', level=logging.DEBUG)
+        regrid = None
+
+        try:
+            regrid = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path, **self.esmf_kwargs)
+        finally:
+            to_destroy = [regrid, srcgrid, srcfield, dstgrid, dstfield]
+            for t in to_destroy:
+                if t is not None:
+                    t.destroy()
+            del regrid
+            del srcgrid
+            del srcfield
+            del dstgrid
+            del dstfield
+
     def write_subsets(self):
         """
-        Write grid subsets to netCDF files using the provided filename templates.
+        Write grid subsets to netCDF files using the provided filename templates. This will also generate ESMF
+        regridding weights for each subset if requested.
         """
-        # tdk: RENAME: this should probably be changed to execute
         src_filenames = []
         dst_filenames = []
         wgt_filenames = []
@@ -626,34 +664,6 @@ class GridChunker(AbstractOcgisObject):
 
         vm.barrier()
 
-    def write_esmf_weights(self, src_path, dst_path, wgt_path, src_grid=None, dst_grid=None):
-        # tdk: ORDER
-        # tdk: DOC
-        ocgis_lh(logger='grid_chunker', msg='entering write_esmf_weights', level=logging.DEBUG)
-        assert wgt_path is not None
-        if src_grid is None:
-            src_grid = self.src_grid
-        if dst_grid is None:
-            dst_grid = self.dst_grid
-        srcfield, srcgrid = create_esmf_field(src_path, src_grid, self.esmf_kwargs)
-        ocgis_lh(logger='grid_chunker', msg='finished creating source ESMPy field', level=logging.DEBUG)
-        dstfield, dstgrid = create_esmf_field(dst_path, dst_grid, self.esmf_kwargs)
-        ocgis_lh(logger='grid_chunker', msg='finished creating destination ESMPy field', level=logging.DEBUG)
-        regrid = None
-
-        try:
-            regrid = create_esmf_regrid(srcfield=srcfield, dstfield=dstfield, filename=wgt_path, **self.esmf_kwargs)
-        finally:
-            to_destroy = [regrid, srcgrid, srcfield, dstgrid, dstfield]
-            for t in to_destroy:
-                if t is not None:
-                    t.destroy()
-            del regrid
-            del srcgrid
-            del srcfield
-            del dstgrid
-            del dstfield
-
     def _gc_remap_weight_variable_(self, ii, wvn, odata, src_indices, dst_indices, ifile, gidx,
                                    split_grids_directory=None):
         if wvn == 'S':
@@ -692,18 +702,6 @@ class GridChunker(AbstractOcgisObject):
         return odata
 
 
-def esmf_func(func):
-    def wrap(*args, **kwargs):
-        if 'ESMF' not in globals():
-            import ESMF
-            globals().update({'ESMF': ESMF})
-            # tdk: REMOVE
-            ESMF.Manager(debug=True)
-        return func(*args, **kwargs)
-
-    return wrap
-
-
 def update_esmf_kwargs(target):
     if 'regrid_method' not in target:
         target['regrid_method'] = ESMF.RegridMethod.CONSERVE
@@ -735,7 +733,7 @@ def update_esmf_kwargs(target):
 
 def create_esmf_field(*args):
     grid = create_esmf_grid(*args)
-    # tdk: need method to specify meshloc for fields
+    # tdk: LAST-ENH: need method to specify meshloc for fields
     if isinstance(grid, ESMF.Mesh):
         meshloc = ESMF.MeshLoc.ELEMENT
     else:
@@ -744,12 +742,10 @@ def create_esmf_field(*args):
 
 
 def create_esmf_grid(filename, grid, esmf_kwargs):
-    # tdk: what to do with is_sphere?
     filetype = grid.driver.get_esmf_fileformat()
     klass = grid.driver.get_esmf_grid_class()
 
     if klass == ESMF.Grid:
-
         # Corners are only needed for conservative regridding.
         if esmf_kwargs.get('regrid_method') == ESMF.RegridMethod.BILINEAR:
             add_corner_stagger = False
@@ -789,8 +785,3 @@ def global_grid_shape(grid):
     with vm.scoped_by_emptyable('global grid shape', grid):
         if not vm.is_null:
             return grid.shape_global
-
-
-def is_unstructured(target):
-    # tdk: this should use target.is_isomorphic?
-    return isinstance(target, GridUnstruct)

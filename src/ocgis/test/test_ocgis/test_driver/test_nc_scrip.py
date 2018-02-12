@@ -1,5 +1,4 @@
 import itertools
-from unittest import SkipTest
 
 import numpy as np
 from mock import mock
@@ -46,27 +45,6 @@ class TestDriverNetcdfSCRIP(TestBase, FixtureDriverNetcdfSCRIP):
         field = self.fixture_driver_scrip_netcdf_field()
         self.assertIsInstance(field, Field)
 
-        #tdk: REMOVE
-        slc = np.array([1, 3])
-        sub = field.grid.get_distributed_slice(slc)
-        pass
-        #tdk: /REMOVE
-
-    def test_system_spatial_resolution(self):
-        """Test spatial resolution is computed appropriately."""
-        raise SkipTest
-        # tdk: REMOVE: this test is for development and can be taken away at the end
-        path = '/mnt/e24fbd51-d3a4-44e5-82a5-0e20b3487199/data/bekozi-work/i49-ugrid-cesm/0.9x1.25_c110307.nc'
-        rd = RequestDataset(path, driver=DriverKey.NETCDF_SCRIP)
-        field = rd.create_field()
-        self.assertEqual(field.driver.key, DriverKey.NETCDF_SCRIP)
-        self.assertEqual(field.grid.driver.key, DriverKey.NETCDF_SCRIP)
-
-        self.barrier_print(field.shapes)
-
-        self.assertEqual(field.grid.resolution_x, 1.25)
-        self.assertAlmostEqual(field.grid.resolution_y, 0.94240837696335089)
-
     def test_array_resolution(self):
         self.assertEqual(DriverNetcdfSCRIP.array_resolution(np.array([5]), None), 0.0)
         self.assertEqual(DriverNetcdfSCRIP.array_resolution(np.array([-5, -10, 10, 5], dtype=float), None), 5.0)
@@ -84,8 +62,6 @@ class TestDriverNetcdfSCRIP(TestBase, FixtureDriverNetcdfSCRIP):
         self.assertEqual(m_DriverNetcdfSCRIP.array_resolution.call_count, 2)
 
     def test_create_field(self):
-        # tdk: test with bounds and corners handled
-        # tdk: RESUME: test that the data is distributed appropriately when loading in a scrip file in parallel
         meta = {'dimensions': {u'grid_corners': {'isunlimited': False,
                                   'name': u'grid_corners',
                                   'size': 4},

@@ -32,7 +32,7 @@ In addition to chunked weight generation, the interface also offers spatial subs
 Usage
 -----
 
-.. tdk: update help output; don't wrap final text to save space
+.. tdk: LAST-CLN: update help output; don't wrap final text to save space
 
 .. code-block:: sh
 

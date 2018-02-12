@@ -105,6 +105,28 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         gu = GridUnstruct(geoms=[polygc, pointgc])
         gu.parent.write(ufile)
 
+    def run_system_splitting_unstructured(self, genweights):
+        # tdk: LAST-FIX: fails with mpi4py import when it is not installed. should pass in serial.
+        env.CLOBBER_UNITS_ON_BOUNDS = False
+
+        ufile = self.get_temporary_file_path('ugrid.nc')
+        resolution = 10.
+        self.fixture_regular_ugrid_file(ufile, resolution)
+        src_rd = RequestDataset(ufile, driver=DriverNetcdfUGRID, grid_abstraction='point')
+        # src_rd.inspect()
+        src_grid = src_rd.get().grid
+        self.assertEqual(src_grid.abstraction, 'point')
+        dst_grid = self.get_gridxy_global(resolution=20., crs=Spherical())
+
+        gs = GridChunker(src_grid, dst_grid, (3, 3), check_contains=False, src_grid_resolution=10.,
+                         paths=self.fixture_paths, genweights=genweights)
+
+        gs.write_subsets()
+
+        actual = gs.create_full_path_from_template('src_template', index=1)
+        actual = RequestDataset(actual).get()
+        self.assertIn(GridChunkerConstants.IndexFile.NAME_SRCIDX_GUID, actual)
+
     @attr('mpi', 'slow')
     def test(self):
         gs = self.fixture_grid_chunker()
@@ -232,29 +254,6 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         gs.write_subsets()
         self.assertEqual(len(os.listdir(self.current_dir_output)), 7)
 
-    def run_system_splitting_unstructured(self, genweights):
-        # tdk: ORDER
-        # tdk: LAST: fails with mpi4py import when it is not installed. should pass in serial.
-        env.CLOBBER_UNITS_ON_BOUNDS = False
-
-        ufile = self.get_temporary_file_path('ugrid.nc')
-        resolution = 10.
-        self.fixture_regular_ugrid_file(ufile, resolution)
-        src_rd = RequestDataset(ufile, driver=DriverNetcdfUGRID, grid_abstraction='point')
-        # src_rd.inspect()
-        src_grid = src_rd.get().grid
-        self.assertEqual(src_grid.abstraction, 'point')
-        dst_grid = self.get_gridxy_global(resolution=20., crs=Spherical())
-
-        gs = GridChunker(src_grid, dst_grid, (3, 3), check_contains=False, src_grid_resolution=10.,
-                         paths=self.fixture_paths, genweights=genweights)
-
-        gs.write_subsets()
-
-        actual = gs.create_full_path_from_template('src_template', index=1)
-        actual = RequestDataset(actual).get()
-        self.assertIn(GridChunkerConstants.IndexFile.NAME_SRCIDX_GUID, actual)
-
     def test_system_splitting_unstructured_no_weights(self):
         """Only split the unstructured grid source."""
         self.run_system_splitting_unstructured(False)
@@ -380,7 +379,6 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         self.assertEqual(gc.nchunks_dst, (10, 10))
 
     def test_write_subsets(self):
-        # tdk: rename: write_subsets on grid chunker to write_chunks
         # Test a destination iterator.
         grid = mock.create_autospec(GridUnstruct)
         grid._gc_initialize_ = mock.Mock()
