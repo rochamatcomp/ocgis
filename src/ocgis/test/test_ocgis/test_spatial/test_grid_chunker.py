@@ -12,7 +12,7 @@ from ocgis.driver.nc_ugrid import DriverNetcdfUGRID
 from ocgis.spatial.grid import GridUnstruct, Grid
 from ocgis.spatial.grid_chunker import GridChunker, does_contain
 from ocgis.test.base import attr, AbstractTestInterface, create_gridxy_global
-from ocgis.test.test_ocgis.test_driver.test_nc_scrip import FixtureDriverScripNetcdf
+from ocgis.test.test_ocgis.test_driver.test_nc_scrip import FixtureDriverNetcdfSCRIP
 from ocgis.variable.base import Variable
 from ocgis.variable.crs import Spherical
 from ocgis.variable.dimension import Dimension
@@ -20,7 +20,7 @@ from ocgis.variable.temporal import TemporalVariable
 from ocgis.vmachine.mpi import MPI_COMM, MPI_RANK
 
 
-class TestGridChunker(AbstractTestInterface, FixtureDriverScripNetcdf):
+class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
 
     @property
     def fixture_paths(self):

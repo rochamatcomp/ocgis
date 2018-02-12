@@ -8,7 +8,7 @@ from ocgis.util.helpers import create_unique_global_array
 from ocgis.vmachine.mpi import hgather
 
 
-class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
+class DriverNetcdfSCRIP(AbstractUnstructuredDriver, DriverNetcdf):
     """
     Driver for the SCRIP NetCDF structured and unstructured grid format. SCRIP is a legacy format that is the primary
     precursor to NetCDF-CF convention. By default, SCRIP grids are treated as unstructured data creating an unstructured
@@ -21,7 +21,7 @@ class DriverScripNetcdf(AbstractUnstructuredDriver, DriverNetcdf):
 
     @staticmethod
     def array_resolution(value, axis):
-        # tdk: doc
+        #
         if value.size == 1:
             return 0.0
         else:

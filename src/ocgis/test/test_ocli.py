@@ -10,7 +10,7 @@ from shapely.geometry import box
 import ocgis
 from ocgis import RequestDataset, Variable, Grid, vm, GridChunker
 from ocgis import env
-from ocgis.driver.nc_scrip import DriverScripNetcdf
+from ocgis.driver.nc_scrip import DriverNetcdfSCRIP
 from ocgis.test.base import TestBase, attr, create_gridxy_global, create_exact_field
 from ocgis.util.addict import Dict
 from ocgis.variable.crs import Spherical
@@ -238,7 +238,7 @@ class Test(TestBase):
         raise SkipTest
         # path = os.path.expanduser('~/l/i49-ugrid-cesm/0.9x1.25_c110307.nc')
         path = os.path.expanduser('~/l/i49-ugrid-cesm/SCRIPgrid_ne16np4_nomask_c110512.nc')
-        field = RequestDataset(uri=path, driver=DriverScripNetcdf).create_field()
+        field = RequestDataset(uri=path, driver=DriverNetcdfSCRIP).create_field()
 
         gc = GridChunker(field.grid, field.grid)
         print('gc.nchunks_dst', gc.nchunks_dst)

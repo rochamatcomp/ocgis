@@ -6,12 +6,12 @@ from mock import mock
 
 from ocgis import RequestDataset, DimensionMap, GridUnstruct, PointGC, Field, Variable, Dimension, GridChunker
 from ocgis.constants import DriverKey, DMK, Topology
-from ocgis.driver.nc_scrip import DriverScripNetcdf
+from ocgis.driver.nc_scrip import DriverNetcdfSCRIP
 from ocgis.test.base import TestBase
 from ocgis.variable.crs import Spherical
 
 
-class FixtureDriverScripNetcdf(object):
+class FixtureDriverNetcdfSCRIP(object):
 
     def fixture_driver_scrip_netcdf_field(self):
         xvalue = np.arange(10., 35., step=5)
@@ -26,9 +26,9 @@ class FixtureDriverScripNetcdf(object):
             x.get_value()[idx] = xv
             y.get_value()[idx] = yv
 
-        gc = PointGC(x=x, y=y, crs=Spherical(), driver=DriverScripNetcdf)
+        gc = PointGC(x=x, y=y, crs=Spherical(), driver=DriverNetcdfSCRIP)
         grid = GridUnstruct(geoms=[gc])
-        ret = Field(grid=grid, driver=DriverScripNetcdf)
+        ret = Field(grid=grid, driver=DriverNetcdfSCRIP)
 
         grid_dims = Variable(name='grid_dims', value=[yvalue.shape[0], xvalue.shape[0]], dimensions='grid_rank')
         ret.add_variable(grid_dims)
@@ -36,12 +36,12 @@ class FixtureDriverScripNetcdf(object):
         return ret
 
 
-class TestDriverScripNetcdf(TestBase, FixtureDriverScripNetcdf):
+class TestDriverNetcdfSCRIP(TestBase, FixtureDriverNetcdfSCRIP):
 
     def test_init(self):
         rd = mock.create_autospec(RequestDataset)
-        d = DriverScripNetcdf(rd)
-        self.assertIsInstance(d, DriverScripNetcdf)
+        d = DriverNetcdfSCRIP(rd)
+        self.assertIsInstance(d, DriverNetcdfSCRIP)
 
         field = self.fixture_driver_scrip_netcdf_field()
         self.assertIsInstance(field, Field)
@@ -68,20 +68,20 @@ class TestDriverScripNetcdf(TestBase, FixtureDriverScripNetcdf):
         self.assertAlmostEqual(field.grid.resolution_y, 0.94240837696335089)
 
     def test_array_resolution(self):
-        self.assertEqual(DriverScripNetcdf.array_resolution(np.array([5]), None), 0.0)
-        self.assertEqual(DriverScripNetcdf.array_resolution(np.array([-5, -10, 10, 5], dtype=float), None), 5.0)
+        self.assertEqual(DriverNetcdfSCRIP.array_resolution(np.array([5]), None), 0.0)
+        self.assertEqual(DriverNetcdfSCRIP.array_resolution(np.array([-5, -10, 10, 5], dtype=float), None), 5.0)
 
     def test_array_resolution_called(self):
         """Test the driver's array resolution method is called appropriately."""
 
-        m_DriverScripNetcdf = mock.create_autospec(DriverScripNetcdf)
-        with mock.patch('ocgis.driver.registry.get_driver_class', return_value=m_DriverScripNetcdf):
+        m_DriverNetcdfSCRIP = mock.create_autospec(DriverNetcdfSCRIP)
+        with mock.patch('ocgis.driver.registry.get_driver_class', return_value=m_DriverNetcdfSCRIP):
             x = Variable(name='x', value=[1, 2, 3], dimensions='dimx')
             y = Variable(name='y', value=[4, 5, 6], dimensions='dimy')
             pgc = PointGC(x=x, y=y)
             _ = pgc.resolution_x
             _ = pgc.resolution_y
-        self.assertEqual(m_DriverScripNetcdf.array_resolution.call_count, 2)
+        self.assertEqual(m_DriverNetcdfSCRIP.array_resolution.call_count, 2)
 
     def test_create_field(self):
         # tdk: test with bounds and corners handled
@@ -144,8 +144,8 @@ class TestDriverScripNetcdf(TestBase, FixtureDriverScripNetcdf):
                                'fill_value_packed': None,
                                'name': u'grid_imask'}}}
 
-        rd = RequestDataset(metadata=meta, driver=DriverScripNetcdf)
-        d = DriverScripNetcdf(rd)
+        rd = RequestDataset(metadata=meta, driver=DriverNetcdfSCRIP)
+        d = DriverNetcdfSCRIP(rd)
 
         dmap = d.create_dimension_map(meta)
         self.assertIsInstance(dmap, DimensionMap)
