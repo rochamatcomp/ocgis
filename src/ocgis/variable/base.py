@@ -2021,6 +2021,12 @@ class VariableCollection(AbstractCollection, AbstractContainer, Attributes):
                         if k not in header_map_keys:
                             new_yld[k] = v
                 yld = new_yld
+
+            # Remove the calculation key if it is present on a non-melted format.
+            if not has_melted:
+                if HeaderName.CALCULATION_KEY in yld:
+                    yld.pop(HeaderName.CALCULATION_KEY)
+
             yld = geom_value, yld
             yield yld
 
