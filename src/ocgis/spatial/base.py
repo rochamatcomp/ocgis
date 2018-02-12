@@ -348,7 +348,7 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
             for var in new_variables:
                 parent.add_variable(var, force=True)
 
-        # tdk: HACK: the set_xyz... method should maybe be on the driver
+        # tdk: LAST-HACK: the set_xyz... method should maybe be on the driver
         if parent.driver.key in ('netcdf-ugrid', 'netcdf-scrip'):
             pos = (0, 0)
 
@@ -476,7 +476,7 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
 
     @property
     def driver(self):
-        # tdk: HACK: this should be a generic property on all parented collections like this
+        # tdk: LAST-HACK: this should be a generic property on all parented collections like this
         return self.parent.driver
 
     @property

@@ -344,7 +344,7 @@ class DriverNetcdfCF(AbstractDriverNetcdfCF):
 
     @staticmethod
     def array_resolution(value, axis):
-        """See :meth:`ocgis.driver.base.AbstractDriver#array_resolution`"""
+        """See :meth:`ocgis.driver.base.AbstractDriver.array_resolution`"""
         if value.size == 1:
             return 0.0
         else:

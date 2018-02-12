@@ -1,7 +1,7 @@
 import logging
 import os
 
-# tdk: LAST: ESMF is an optional dependency
+# tdk: LAST-HACK: ESMF is an optional dependency
 import ESMF
 import netCDF4 as nc
 import numpy as np
@@ -21,7 +21,7 @@ from ocgis.variable.base import VariableCollection
 from ocgis.variable.geom import GeometryVariable
 from ocgis.vmachine.mpi import redistribute_by_src_idx
 
-# tdk: LAST: change to debug = False
+# tdk: LAST-REMOVE: remove manager setup
 manager = ESMF.Manager(debug=True)
 
 
@@ -79,15 +79,24 @@ class GridChunker(AbstractOcgisObject):
      resolution between source and destination grids.
     :param bool redistribute: If ``True``, redistribute the source subset for unstructured grids. The redistribution
      reloads the data from source so should not be used with in-memory grids.
+    :param bool genweights: If ``False``, do no generate regridding weight files using ESMF. If ``True``, generate
+     regridding weight files for each source-destination chunk.
+    :param dict esmf_kwargs: Optional overloads for keyword arguments to ESMF interfaces. Currently supported keyword
+     arguments are below.
+
+    ===================== ============== ===============================================================
+    Name                  Default        Possible
+    ===================== ============== ===============================================================
+    ``'regrid_method'``   ``'CONSERVE'`` ``'CONSERVE'``, ``'BILINEAR'``, ``'PATCH'``, ``'NEAREST_STOD'``
+    ``'unmapped_action'`` ``'IGNORE'``   ``'IGNORE'``, ``'ERROR'``
+    ===================== ============== ===============================================================
+
     :raises: ValueError
     """
 
     def __init__(self, source, destination, nchunks_dst=None, paths=None, check_contains=False, allow_masked=True,
                  src_grid_resolution=None, dst_grid_resolution=None, optimized_bbox_subset='auto', iter_dst=None,
                  buffer_value=None, redistribute=False, genweights=False, esmf_kwargs=None):
-        # tdk: LAST: make nchunks_dst an optional parameter. this will make it easier to do a merge-only operation.
-        # tdk: DOC: genweights, esmf_kwargs
-        # tdk: RENAME: Chunked weight generation
 
         self._src_grid = None
         self._dst_grid = None
@@ -120,19 +129,6 @@ class GridChunker(AbstractOcgisObject):
         self.src_grid._gc_initialize_(RegriddingRole.SOURCE)
         self.dst_grid._gc_initialize_(RegriddingRole.DESTINATION)
 
-        #tdk: REMOVE
-        # Check optimizations.
-        # assert optimized_bbox_subset is not None
-        # if optimized_bbox_subset == 'auto':
-        #     # It is okay to use optimization if resolution are provided for unstructured grids. This implies some
-        #     # regular structure for the elements.
-        #     if (not self.src_grid.is_isomorphic and src_grid_resolution is None) or \
-        #        (not self.dst_grid.is_isomorphic and dst_grid_resolution is None):
-        #         optimized_bbox_subset = False
-        #     else:
-        #         optimized_bbox_subset = True
-        # self.optimized_bbox_subset = optimized_bbox_subset
-
         # Construct default paths if None are provided.
         defaults = {'dst_template': 'split_dst_{}.nc',
                     'src_template': 'split_src_{}.nc',
@@ -149,31 +145,15 @@ class GridChunker(AbstractOcgisObject):
         self.paths = paths
 
     @property
-    def optimized_bbox_subset(self):
-        #tdk: ORDER
-        #tdk: DOC
-        if self._optimized_bbox_subset == 'auto':
-            # tdk: FEATURE: this should use is_isomorphic as opposed to resolution to avoid loading the coordinate data to determine resolution.
-            # tdk: FEATURE:  requires adding grid_is_isomorphic argument to request dataset to pass to dimension map creation.
-            # if self.src_grid.is_isomorphic and self.dst_grid.is_isomorphic:
-            if (self.src_grid.resolution_max is not None or self.src_grid_resolution is not None) and \
-                    (self.dst_grid.resolution_max is not None or self.dst_grid_resolution is not None):
-                ret = True
-            else:
-                ret = False
-        else:
-            ret = self._optimized_bbox_subset
-        return ret
-
-    @optimized_bbox_subset.setter
-    def optimized_bbox_subset(self, value):
-        #tdk: ORDER
-        assert value is not None
-        self._optimized_bbox_subset = value
-
-    @property
     def buffer_value(self):
-        #tdk: DOC
+        """
+        Spatial distance in units of the destination grid to buffer the destination grid chunk's spatial extent when
+        subsetting the associated source grid. Defaults to the higher spatial resolution times a modifier
+        (:attr:`ocgis.constants.GridChunkerConstants.BUFFER_RESOLUTION_MODIFIER`).
+
+        :param float value: Spatial buffer value
+        :rtype: float
+        """
         if self._buffer_value is None:
             try:
                 if self.dst_grid_resolution is None:
@@ -229,6 +209,30 @@ class GridChunker(AbstractOcgisObject):
         if self._dst_grid is None:
             self._dst_grid = get_grid_object(self.destination)
         return self._dst_grid
+
+    @property
+    def optimized_bbox_subset(self):
+        """
+        If ``True``, use an optimized bounding box subset to spatially subset the source grid.
+
+        :param value: If ``'auto'``, choose the optimization based on grid isomorphism.
+        :type value: str | bool
+        :rtype: bool
+        """
+        if self._optimized_bbox_subset == 'auto':
+            if (self.src_grid.resolution_max is not None or self.src_grid_resolution is not None) and \
+                    (self.dst_grid.resolution_max is not None or self.dst_grid_resolution is not None):
+                ret = True
+            else:
+                ret = False
+        else:
+            ret = self._optimized_bbox_subset
+        return ret
+
+    @optimized_bbox_subset.setter
+    def optimized_bbox_subset(self, value):
+        assert value is not None
+        self._optimized_bbox_subset = value
 
     @property
     def src_grid(self):
@@ -708,14 +712,24 @@ def update_esmf_kwargs(target):
                 'BILINEAR': ESMF.RegridMethod.BILINEAR,
                 'NEAREST_STOD': ESMF.RegridMethod.NEAREST_STOD,
                 'PATCH': ESMF.RegridMethod.PATCH}
-        regrid_method = target.get('regrid_method')
-        if regrid_method not in rmap.values():
-            try:
-                target['regrid_method'] = rmap[regrid_method]
-            except KeyError:
-                raise ValueError('Chunked regridding does not support "{}".'.format(regrid_method))
+        regrid_method = target['regrid_method']
+        try:
+            target['regrid_method'] = rmap[regrid_method]
+        except KeyError:
+            raise ValueError('Chunked regridding does not support "{}".'.format(regrid_method))
+
     if 'unmapped_action' not in target:
         target['unmapped_action'] = ESMF.UnmappedAction.IGNORE
+    else:
+        rmap = {'IGNORE': ESMF.UnmappedAction.IGNORE,
+                'ERROR': ESMF.UnmappedAction.ERROR}
+        unmapped_action = target['unmapped_action']
+        try:
+            target['unmapped_action'] = rmap[unmapped_action]
+        except KeyError:
+            raise ValueError('Chunked regridding does not support "{}".'.format(unmapped_action))
+
+    # Never create a route handle for weight generation only.
     target['create_rh'] = False
 
 

@@ -21,7 +21,7 @@ class DriverNetcdfSCRIP(AbstractUnstructuredDriver, DriverNetcdf):
 
     @staticmethod
     def array_resolution(value, axis):
-        #
+        """See :meth:`ocgis.driver.base.AbstractDriver.array_resolution`"""
         if value.size == 1:
             return 0.0
         else:
@@ -33,7 +33,6 @@ class DriverNetcdfSCRIP(AbstractUnstructuredDriver, DriverNetcdf):
             return ret
 
     def create_dimension_map(self, group_metadata, **kwargs):
-        #tdk: RESUME: need to account for bounds
         ret = DimensionMap()
         ret.set_driver(self)
 
@@ -56,10 +55,6 @@ class DriverNetcdfSCRIP(AbstractUnstructuredDriver, DriverNetcdf):
 
     @classmethod
     def _get_field_write_target_(cls, field):
-        # tdk: CLEAN
-        # ux = np.unique(sub['grid_center_lon'].get_value()).shape[0]
-        # uy = np.unique(sub['grid_center_lat'].get_value()).shape[0]
-
         # Unstructured SCRIP has a value of 1 for the grid dimensions by default. Just leave it alone.
         if field.dimensions['grid_rank'].size > 1:
             # Update the grid size based on unique x/y values. In SCRIP, the coordinate values are duplicated in the
@@ -71,8 +66,7 @@ class DriverNetcdfSCRIP(AbstractUnstructuredDriver, DriverNetcdf):
 
     @staticmethod
     def _gc_iter_dst_grid_slices_(grid_chunker):
-        # tdk: CLEAN
-        # tdk: HACK: this method uses some global gathers which is not ideal
+        # TODO: This method uses some global gathers which is not ideal.
         # Destination splitting works off center coordinates only.
         pgc = grid_chunker.dst_grid.abstractions_available['point']
 
@@ -80,12 +74,9 @@ class DriverNetcdfSCRIP(AbstractUnstructuredDriver, DriverNetcdf):
         # spatially. If we just break the grid into pieces w/out using unique values, the points may be scattered which
         # does not optimize the spatial coverage of the source grid.
         center_lat = pgc.y.get_value()
-        # center_lat = pgc.parent['grid_center_lat'].get_value()
 
         # ucenter_lat = np.unique(center_lat)
         ucenter_lat = create_unique_global_array(center_lat)
-
-        # ocgis_lh(msg=['ucenter_lat=', ucenter_lat], logger='tdk', level=10)
 
         ucenter_lat = vm.gather(ucenter_lat)
         if vm.rank == 0:
@@ -95,33 +86,11 @@ class DriverNetcdfSCRIP(AbstractUnstructuredDriver, DriverNetcdf):
         else:
             ucenter_splits = [None] * grid_chunker.nchunks_dst[0]
 
-        # ocgis_lh(msg=['ucenter_splits=', ucenter_splits], logger='tdk', level=10)
-
-        # for ctr, ucenter_split in enumerate(ucenter_splits, start=1):
         for ucenter_split in ucenter_splits:
-
             ucenter_split = vm.bcast(ucenter_split)
-
             select = np.zeros_like(center_lat, dtype=bool)
             for v in ucenter_split.flat:
                 select = np.logical_or(select, center_lat == v)
-            # sub = pgc.parent[{pgc.node_dim.name: select}]
-            # split_path = os.path.join(WD, 'split_dst_{}.nc').format(ctr)
-
-            # ux = np.unique(sub['grid_center_lon'].get_value()).shape[0]
-            # uy = np.unique(sub['grid_center_lat'].get_value()).shape[0]
-            # sub['grid_dims'].get_value()[:] = ux, uy
-
-            # with ocgis.vm.scoped('grid write', [0]):
-            #     if not ocgis.vm.is_null:
-            #         sub.write(split_path, driver='netcdf')
-            # ocgis.vm.barrier()
-
-            # yld = create_scrip_grid(split_path)
-
-            # if yield_slice:
-            #     yld = yld, ucenter_split
-            # yield yld
             yield select
 
     @staticmethod

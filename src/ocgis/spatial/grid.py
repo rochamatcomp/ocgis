@@ -1047,7 +1047,10 @@ class GridUnstruct(AbstractGrid):
         return ret
 
     def reduce_global(self, *args, **kwargs):
-        # tdk: FEATURE: this should run on each abstraction in turn
+        """See :meth:`ocgis.spatial.geomc.AbstractGeometryCoordinates.reduce_global"""
+
+        # Reductions are only important for higher-level abstractions (i.e. polygons). Polygons and lines should share
+        # coordinate arrays.
         for a in self.abstractions_available.values():
             a = a.reduce_global(*args, **kwargs)
             return a.parent.grid
