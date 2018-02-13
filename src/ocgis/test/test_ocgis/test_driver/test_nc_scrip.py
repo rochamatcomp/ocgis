@@ -155,7 +155,7 @@ class TestDriverNetcdfSCRIP(TestBase, FixtureDriverNetcdfSCRIP):
         gc = mock.create_autospec(GridChunker, spec_set=True)
         gc.dst_grid = field.grid
         actual = field.grid._gc_nchunks_dst_(gc)
-        self.assertEqual(actual, 20)
+        self.assertEqual(actual, 4)
 
 
 def run_topo_tst(obj, dmap):

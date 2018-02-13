@@ -3,7 +3,7 @@
 import os
 import shutil
 import tempfile
-from warnings import warn
+from logging import WARN
 
 import click
 from shapely.geometry import box
@@ -12,11 +12,9 @@ import ocgis
 from ocgis import RequestDataset, GridChunker, GeometryVariable
 from ocgis.base import grid_abstraction_scope
 from ocgis.constants import DriverKey, Topology, GridChunkerConstants
-from ocgis.exc import OcgWarning
 from ocgis.spatial.spatial_subset import SpatialSubsetOperation
-
-
 # tdk: LAST-ENH: add defaults for nchunks_dst
+from ocgis.util.logging_ocgis import ocgis_lh
 
 
 @click.group()
@@ -70,8 +68,10 @@ def ocli():
 def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, esmf_dst_type, genweights,
                 esmf_regrid_method, spatial_subset, src_resolution, dst_resolution, buffer_distance, wd, persist):
     if not ocgis.env.USE_NETCDF4_MPI:
-        warn(OcgWarning('env.USE_NETCDF4_MPI is False. Considerable performance gains are possible if this is True. Is '
-                        'netCDF4-python built with parallel support?'))
+        msg = 'env.USE_NETCDF4_MPI is False. Considerable performance gains are possible if this is True. Is ' \
+              'netCDF4-python built with parallel support?'
+        # tdk: LAST-ENH add force method to warning messages ensuring they are emitted
+        ocgis_lh(msg, level=WARN, logger='ocli.chunked_rwg')
 
     if nchunks_dst is not None:
         # Format the chunking decomposition from its string representation.

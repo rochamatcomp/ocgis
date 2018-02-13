@@ -54,7 +54,8 @@ class TestChunkedRWG(TestBase):
     @attr('mpi', 'esmf')
     def test_system_chunked_versus_global(self):
         """Test weight files are equivalent using the chunked versus global weight generation approach."""
-        # tdk: LAST-FIX: needs to work in parallel
+        # tdk: LAST-TST: needs to work in parallel
+        # tdk: LAST-TST: test PATCH regridding
 
         if ocgis.vm.size not in [1, 4]:
             raise SkipTest('ocgis.vm.size not in [1, 4]')
@@ -285,7 +286,7 @@ class TestChunkedRWG(TestBase):
 
         runner = CliRunner()
         cli_args = ['chunked_rwg', '--source', source, '--destination', destination, '--wd', wd, '--spatial_subset',
-                    '--weight', weight, '--esmf_regrid_method', '', '--persist']
+                    '--weight', weight, '--esmf_regrid_method', 'BILINEAR', '--persist']
         result = runner.invoke(ocli, args=cli_args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
 

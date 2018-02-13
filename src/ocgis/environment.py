@@ -89,7 +89,7 @@ class Environment(AbstractOcgisObject):
         self.USE_MEMORY_OPTIMIZATIONS = EnvParm('USE_MEMORY_OPTIMIZATIONS', False, formatter=self._format_bool_)
         self.USE_NETCDF4_MPI = EnvParm('USE_NETCDF4_MPI', None, formatter=self._format_bool_)
         self.CONF_PATH = EnvParm('CONF_PATH', os.path.expanduser('~/.config/ocgis.conf'))
-        self.SUPPRESS_WARNINGS = EnvParm('SUPPRESS_WARNINGS', False, formatter=self._format_bool_)
+        self.SUPPRESS_WARNINGS = EnvParm('SUPPRESS_WARNINGS', True, formatter=self._format_bool_)
         self.DEFAULT_GEOM_UID = EnvParm('DEFAULT_GEOM_UID', constants.OCGIS_UNIQUE_GEOMETRY_IDENTIFIER, formatter=str)
         self.NETCDF_FILE_FORMAT = EnvParm('NETCDF_FILE_FORMAT', constants.NETCDF_DEFAULT_DATA_MODEL, formatter=str)
         self.NP_INT = EnvParm('NP_INT', constants.DEFAULT_NP_INT)

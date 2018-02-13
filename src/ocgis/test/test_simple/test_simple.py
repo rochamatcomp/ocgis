@@ -1100,7 +1100,7 @@ class TestSimple(TestSimpleBase):
 
             with open(ret, 'r') as f:
                 reader = csv.DictReader(f)
-                rows = list(reader)
+                _ = list(reader)
 
     def test_csv_calc_conversion(self):
         calc = [{'func': 'mean', 'name': 'my_mean'}]
@@ -1122,8 +1122,8 @@ class TestSimple(TestSimpleBase):
                 else:
                     desired = {'SRC_VAR': 'foo', 'LB_LEVEL': '0', 'LEVEL': '50', 'DID': '1',
                                'TIME': '2000-03-16 00:00:00', 'MONTH': '3', 'my_mean': '1.0', 'UB_LEVEL': '100',
-                               'LB_TIME': '2000-03-01 00:00:00', 'YEAR': '2000', 'CALC_KEY': 'mean',
-                               'UB_TIME': '2000-04-01 00:00:00', 'DAY': '16'}
+                               'LB_TIME': '2000-03-01 00:00:00', 'YEAR': '2000', 'UB_TIME': '2000-04-01 00:00:00',
+                               'DAY': '16'}
                 self.assertDictEqual(row, desired)
 
     def test_csv_calc_conversion_two_calculations(self):
@@ -1170,7 +1170,7 @@ class TestSimple(TestSimpleBase):
                     row = next(reader)
                     desired = {'LB_LEVEL': '0', 'LEVEL': '50', 'DID': '1', 'TIME': '2000-03-16 00:00:00', 'MONTH': '3',
                                'UB_LEVEL': '100', 'LB_TIME': '2000-03-01 00:00:00', 'YEAR': '2000',
-                               'CALC_KEY': 'divide', 'UB_TIME': '2000-04-01 00:00:00', 'DAY': '16', 'divide': '1.0'}
+                               'UB_TIME': '2000-04-01 00:00:00', 'DAY': '16', 'divide': '1.0'}
                     if o == constants.OutputFormatName.CSV_SHAPEFILE:
                         # This will have a unique geometry identifier to link with the shapefile.
                         desired = desired.copy()

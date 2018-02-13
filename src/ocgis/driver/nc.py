@@ -3,7 +3,6 @@ import logging
 from abc import ABCMeta
 from collections import OrderedDict
 from copy import deepcopy
-from warnings import warn
 
 import netCDF4 as nc
 import numpy as np
@@ -16,7 +15,7 @@ from ocgis.base import orphaned, raise_if_empty
 from ocgis.collection.field import Field
 from ocgis.constants import MPIWriteMode, DimensionMapKey, KeywordArgument, DriverKey, CFName, SourceIndexType
 from ocgis.driver.base import AbstractDriver, driver_scope
-from ocgis.exc import ProjectionDoesNotMatch, PayloadProtectedError, OcgWarning, NoDataVariablesFound, \
+from ocgis.exc import ProjectionDoesNotMatch, PayloadProtectedError, NoDataVariablesFound, \
     GridDeficientError
 from ocgis.util.helpers import itersubclasses, get_iter, get_formatted_slice, get_by_key_list, is_auto_dtype, get_group
 from ocgis.util.logging_ocgis import ocgis_lh
@@ -769,10 +768,10 @@ def create_dimension_map_entry(src, variables, strict=False, attr_name='axis'):
 
         ret = {'variable': var_name, DimensionMapKey.DIMENSION: dims}
     elif len(axis_vars) > 1:
+        # tdk: LAST-ENH: this should use the warning level flag as well
         msg = 'Multiple axis (axis="{}") possibilities found using variable(s) "{}". Use a dimension map to specify ' \
               'the appropriate coordinate dimensions.'
-        w = OcgWarning(msg.format(axis, axis_vars))
-        warn(w)
+        ocgis_lh(msg.format(axis, axis_vars), level=logging.WARN, logger='ocgis.driver.nc')
         ret = None
     else:
         ret = None
