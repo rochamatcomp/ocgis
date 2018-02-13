@@ -477,7 +477,7 @@ class DimensionMap(AbstractOcgisObject):
         >>> [slice(None), slice(0, 1)]
 
         :param bool dimensionless: If ``True``, this variable has no canonical dimension.
-        :raises DimensionMapError
+        :raises: DimensionMapError
         """
         if entry_key in self._special_entry_keys:
             raise DimensionMapError(entry_key, "The entry '{}' has a special set method.".format(entry_key))

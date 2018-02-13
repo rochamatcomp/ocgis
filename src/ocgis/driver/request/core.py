@@ -97,16 +97,16 @@ class RequestDataset(AbstractRequestObject):
     ================== ================= ======================================================================
     Value              File Extension(s) Description
     ================== ================= ======================================================================
-    ``'netcdf-cf'      ``'nc'``          A netCDF file using a CF-Grid metadata convention.
+    ``'netcdf-cf'``    ``'nc'``          A netCDF file using a CF-Grid metadata convention.
     ``'netcdf-ugrid'`` ``'nc'``          A netCDF file using the UGRID (Unstructured Grid) metadata convention.
     ``'netcdf-scrip'`` ``'nc'``          A netCDF file using the SCRIP metadata convention.
-    ``'netcdf' ``      ``'nc'``          A netCDF file with no metadata convention.
+    ``'netcdf'``       ``'nc'``          A netCDF file with no metadata convention.
     ``'vector'``       ``'shp'``         An ESRI Shapefile or other vector source.
     ``'csv'``          ``'csv'``         A CSV file.
     ================== ================= ======================================================================
 
     :param str field_name: Name of the requested field in the output collection. If ``None``, defaults to the variable
-     name or names joined by ``_``.
+     defaults to the data variable name. If there are multiple data variables, the default name is ``'ocgis_field'``.
     :param bool regrid_source: If ``False``, do not regrid this dataset. This is relevant only if a
      ``regrid_destination`` dataset is present. Please see :ref:`esmpy-regridding` for an overview.
     :param bool regrid_destination: If ``True``, use this dataset as the destination grid for a regridding operation.
@@ -131,6 +131,7 @@ class RequestDataset(AbstractRequestObject):
 
     .. _time units: http://netcdf4-python.googlecode.com/svn/trunk/docs/netCDF4-module.html#num2date
     .. _time calendar: http://netcdf4-python.googlecode.com/svn/trunk/docs/netCDF4-module.html#num2date
+
     :param dict driver_kwargs: Any keyword arguments to driver creation. See the driver documentation for a description
      of accepted parameters. These are often format-specific and not easily generalized.
     :param grid_is_isomorphic: See documentation for :class:`ocgis.Field`

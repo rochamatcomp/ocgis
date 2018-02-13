@@ -25,6 +25,7 @@ Chunked Regrid Weight Generation
 ++++++++++++++++++++++++++++++++
 
 Chunked regrid weight generation uses a spatial decomposition to calculate regridding weights by breaking source and destination grids into smaller pieces (chunks). This allows very high resolution grids to participate in regridding without depleting machine memory. The destination grid is chunked using index-based slicing. The source grid is then spatially subset by the spatial extent of the destination chunk increased a spatial buffer to ensure the destination chunk is fully mapped by the source chunk. Weights are calculated using ESMF for each chunked source-destination combination. A global weight file merge is performed by default on the weight chunks to creating a global weights file.
+
 In addition to chunked weight generation, the interface also offers spatial subsetting of the source grid using the `global` spatial extent of the destination grid. This is useful in situations where the destination grid spatial extent is very small compared to the spatial extent of the source grid.
 
 -----
