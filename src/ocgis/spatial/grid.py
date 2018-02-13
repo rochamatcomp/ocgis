@@ -1363,3 +1363,4 @@ def reorder_array(reorder_indices, arr, arr_dimensions, reorder_dimension, varyi
         offset = view_to_reorder.shape[0] - the_split_index
         view_to_reorder[0:offset] = original_to_reorder[the_split_index:]
         view_to_reorder[offset:] = original_to_reorder[0:the_split_index]
+
