@@ -3,9 +3,10 @@ import itertools
 import numpy as np
 from mock import mock
 
-from ocgis import RequestDataset, DimensionMap, GridUnstruct, PointGC, Field, Variable, Dimension, GridChunker
+from ocgis import RequestDataset, DimensionMap, GridUnstruct, PointGC, Field, Variable, Dimension
 from ocgis.constants import DriverKey, DMK, Topology
 from ocgis.driver.nc_scrip import DriverNetcdfSCRIP
+from ocgis.spatial.grid_chunker import GridChunker
 from ocgis.test.base import TestBase
 from ocgis.variable.crs import Spherical
 

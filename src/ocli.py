@@ -9,9 +9,10 @@ import click
 from shapely.geometry import box
 
 import ocgis
-from ocgis import RequestDataset, GridChunker, GeometryVariable
+from ocgis import RequestDataset, GeometryVariable
 from ocgis.base import grid_abstraction_scope
 from ocgis.constants import DriverKey, Topology, GridChunkerConstants
+from ocgis.spatial.grid_chunker import GridChunker
 from ocgis.spatial.spatial_subset import SpatialSubsetOperation
 # tdk: LAST-ENH: add defaults for nchunks_dst
 from ocgis.util.logging_ocgis import ocgis_lh

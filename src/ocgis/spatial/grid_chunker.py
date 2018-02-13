@@ -25,6 +25,9 @@ from ocgis.vmachine.mpi import redistribute_by_src_idx
 manager = ESMF.Manager(debug=True)
 
 
+# tdk: LAST-DOC: update ESMF external demos to account for ocgis changes
+
+
 class GridChunker(AbstractOcgisObject):
     """
     Splits source and destination grids into separate netCDF files. "Source" is intended to mean the source data for a
