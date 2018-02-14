@@ -1,8 +1,6 @@
 import logging
 import os
 
-# tdk: LAST-HACK: ESMF is an optional dependency
-import ESMF
 import netCDF4 as nc
 import numpy as np
 from shapely.geometry import box
@@ -21,13 +19,8 @@ from ocgis.variable.base import VariableCollection
 from ocgis.variable.geom import GeometryVariable
 from ocgis.vmachine.mpi import redistribute_by_src_idx
 
-# tdk: LAST-REMOVE: remove manager setup
-manager = ESMF.Manager(debug=True)
-
 
 # tdk: LAST-DOC: update ESMF external demos to account for ocgis changes
-
-
 class GridChunker(AbstractOcgisObject):
     """
     Splits source and destination grids into separate netCDF files. "Source" is intended to mean the source data for a
@@ -706,6 +699,8 @@ class GridChunker(AbstractOcgisObject):
 
 
 def update_esmf_kwargs(target):
+    import ESMF
+
     if 'regrid_method' not in target:
         target['regrid_method'] = ESMF.RegridMethod.CONSERVE
     else:

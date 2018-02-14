@@ -14,11 +14,14 @@ VERSION = '2.1.0.dev1'
 
 
 class TestCommandOcgis(TestCommand):
-    user_options = [('with-optional', None, 'If present, run optional dependency tests.')]
+    user_options = [('with-optional', None, 'If present, run optional dependency tests.'),
+                    # ('an', None, "'-a' flag to pass to 'nosetests'")
+                    ]
 
     def initialize_options(self):
         TestCommand.initialize_options(self)
         self.with_optional = False
+        # self.an = ''
         self.no_esmf = False
         self.no_icclim = False
 

@@ -14,8 +14,6 @@ from ocgis.variable.crs import Spherical
 from ocli import ocli
 
 
-# tdk: LAST-FIX: modify nose testing implementation to not load this file? how to deal with click?
-
 @attr('cli')
 class TestChunkedRWG(TestBase):
     """Tests for target ``chunked_rwg``."""
@@ -257,6 +255,7 @@ class TestChunkedRWG(TestBase):
         diffs = np.abs(diffs)
         self.assertLess(diffs.max(), 1e-14)
 
+    @attr('esmf')
     def test_chunked_rwg_spatial_subset(self):
         env.CLOBBER_UNITS_ON_BOUNDS = False
 

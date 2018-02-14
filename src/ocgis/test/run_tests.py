@@ -7,7 +7,7 @@ import six
 class RunAll(nose.plugins.Plugin):
     name = 'test_all'
     target = 'ocgis'
-    _attrs_standard = '!release!remote'
+    _attrs_standard = '!release,!remote'
 
     def __init__(self, *args, **kwargs):
         self.attrs = kwargs.pop('attrs', self._attrs_standard)
