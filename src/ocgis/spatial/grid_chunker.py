@@ -730,6 +730,8 @@ def update_esmf_kwargs(target):
 
 
 def create_esmf_field(*args):
+    import ESMF
+
     grid = create_esmf_grid(*args)
     # tdk: LAST-ENH: need method to specify meshloc for fields
     if isinstance(grid, ESMF.Mesh):
@@ -740,6 +742,8 @@ def create_esmf_field(*args):
 
 
 def create_esmf_grid(filename, grid, esmf_kwargs):
+    import ESMF
+
     filetype = grid.driver.get_esmf_fileformat()
     klass = grid.driver.get_esmf_grid_class()
 
@@ -758,6 +762,8 @@ def create_esmf_grid(filename, grid, esmf_kwargs):
 
 
 def create_esmf_regrid(**kwargs):
+    import ESMF
+
     return ESMF.Regrid(**kwargs)
 
 
