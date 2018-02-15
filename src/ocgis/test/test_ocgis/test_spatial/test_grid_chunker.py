@@ -202,6 +202,11 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         gs = GridChunker(gridu, grid, (3, 4), src_grid_resolution=1.0, dst_grid_resolution=2.0,
                          paths=self.fixture_paths)
         self.assertTrue(gs.optimized_bbox_subset)
+        self.assertFalse(gs.use_spatial_decomp)
+
+        # Test spatial decomposition is chosen appropriately.
+        gc = GridChunker(grid, gridu)
+        self.assertTrue(gc.use_spatial_decomp)
 
         # Test ESMF keyword arguments.
         mock_ESMF = mock.Mock()

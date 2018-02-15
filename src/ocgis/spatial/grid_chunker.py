@@ -5,17 +5,17 @@ import netCDF4 as nc
 import numpy as np
 from shapely.geometry import box
 
-from ocgis import Dimension, vm
-from ocgis import Variable
 from ocgis.base import AbstractOcgisObject, grid_abstraction_scope
 from ocgis.collection.field import Field
 from ocgis.constants import GridChunkerConstants, RegriddingRole, Topology, DMK
 from ocgis.driver.request.core import RequestDataset
 from ocgis.spatial.geomc import AbstractGeometryCoordinates
-from ocgis.spatial.grid import GridUnstruct, AbstractGrid
+from ocgis.spatial.grid import GridUnstruct, AbstractGrid, Grid
 from ocgis.util.logging_ocgis import ocgis_lh
-from ocgis.variable.base import VariableCollection
+from ocgis.variable.base import VariableCollection, Variable
+from ocgis.variable.dimension import Dimension
 from ocgis.variable.geom import GeometryVariable
+from ocgis.vmachine.core import vm
 from ocgis.vmachine.mpi import redistribute_by_src_idx
 
 
@@ -91,13 +91,14 @@ class GridChunker(AbstractOcgisObject):
 
     def __init__(self, source, destination, nchunks_dst=None, paths=None, check_contains=False, allow_masked=True,
                  src_grid_resolution=None, dst_grid_resolution=None, optimized_bbox_subset='auto', iter_dst=None,
-                 buffer_value=None, redistribute=False, genweights=False, esmf_kwargs=None):
-
+                 buffer_value=None, redistribute=False, genweights=False, esmf_kwargs=None, use_spatial_decomp='auto'):
+        # tdk: DOC: use_spatial_decomp
         self._src_grid = None
         self._dst_grid = None
         self._buffer_value = None
         self._nchunks_dst = None
         self._optimized_bbox_subset = None
+        self._use_spatial_decomp = use_spatial_decomp
 
         self.genweights = genweights
         self.source = source
@@ -239,6 +240,16 @@ class GridChunker(AbstractOcgisObject):
         if self._src_grid is None:
             self._src_grid = get_grid_object(self.source)
         return self._src_grid
+
+    @property
+    def use_spatial_decomp(self):
+        ref = self._use_spatial_decomp
+        if ref == 'auto':
+            if isinstance(self.dst_grid, Grid):
+                ref = False
+            else:
+                ref = True
+        return ref
 
     def create_full_path_from_template(self, key, index=None):
         ret = self.paths[key]
