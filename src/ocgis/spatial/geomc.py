@@ -465,8 +465,8 @@ class AbstractGeometryCoordinates(AbstractXYZSpatialContainer):
 
     @format_gridunstruct_return
     def get_spatial_subset_operation(self, spatial_op, subset_geom, return_slice=False, original_mask=None,
-                                     keep_touches=True,
-                                     cascade=True, optimized_bbox_subset=False, apply_slice=True, geom_name=None):
+                                     keep_touches=True, cascade=True, optimized_bbox_subset=False, apply_slice=True,
+                                     geom_name=None):
         """
         Perform intersects or intersection operations on the object.
 
