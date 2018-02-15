@@ -153,7 +153,11 @@ class OcgVM(AbstractOcgisObject):
         elif other == np.int64:
             other = np.int64
 
-        return MPI_TYPE_MAPPING[other]
+        if MPI_TYPE_MAPPING is None:
+            ret = None
+        else:
+            ret = MPI_TYPE_MAPPING[other]
+        return ret
 
     def scatter(self, *args, **kwargs):
         return self.comm.scatter(*args, **kwargs)

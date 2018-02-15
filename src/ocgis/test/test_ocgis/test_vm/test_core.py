@@ -68,15 +68,18 @@ class TestOcgVM(TestBase):
 
     def test_system_dummy_comm_Isend_Irecv(self):
         comm = DummyMPIComm()
+
+        recv_data = [[None], None]
+        recv_req = comm.Irecv(recv_data, tag='one')
+
         send_data = [['foo_send'], None]
         req = comm.Isend(send_data, tag='one')
         self.assertIsInstance(req, DummyRequest)
         req.wait()
         req.Test()
-        recv_data = [[None], None]
-        req = comm.Irecv(recv_data, tag='one')
-        req.wait()
-        req.Test()
+
+        recv_req.wait()
+
         self.assertEqual(recv_data[0][0], send_data[0][0])
         self.assertEqual(comm._send_recv, {0: {}})
 

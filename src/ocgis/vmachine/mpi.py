@@ -1,7 +1,7 @@
 import itertools
 from collections import OrderedDict
 from contextlib import contextmanager
-from functools import reduce
+from functools import reduce, partial
 
 import numpy as np
 import six
@@ -67,9 +67,13 @@ class DummyMPIComm(object):
         return args[0][0]
 
     def Irecv(self, payload, source=0, tag=None):
-        stored = self._send_recv[source].pop(tag)
-        payload[0] = stored
-        return DummyRequest()
+        def _irecv_callback_(ipayload, icomm, isource, itag):
+            stored = icomm._send_recv[isource].pop(itag)
+            ipayload[0] = stored
+
+        the_callback = partial(_irecv_callback_, payload, self, source, tag)
+
+        return DummyRequest(callback=the_callback)
 
     def recv(self, *args, **kwargs):
         return self.Irecv(*args, **kwargs)
@@ -93,10 +97,18 @@ MPI_RANK = MPI_COMM.Get_rank()
 
 class DummyRequest(AbstractOcgisObject):
 
+    def __init__(self, callback=None):
+        self._callback = callback
+
     def Test(self):
-        return True
+        self._execute_()
 
     def wait(self):
+        self._execute_()
+
+    def _execute_(self):
+        if self._callback is not None:
+            self._callback()
         return True
 
 

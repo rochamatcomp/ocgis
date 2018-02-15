@@ -775,9 +775,8 @@ def create_buffer_array(value=MPI_EMPTY_VALUE, dtype='i'):
 
 
 def create_Irecv(source, tag, dtype='i', mtype=None):
-    from mpi4py import MPI
     if mtype is None:
-        mtype = MPI.INT
+        mtype = vm.get_mpi_type(np.int32)
 
     buf = create_buffer_array(dtype=dtype)
     req = vm.comm.Irecv([buf, mtype], source=source, tag=tag)
