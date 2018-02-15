@@ -3,7 +3,7 @@ from unittest import SkipTest
 from ocgis import OcgVM, vm, Dimension, env
 from ocgis.driver.request.core import RequestDataset
 from ocgis.test.base import TestBase, attr
-from ocgis.vmachine.mpi import MPI_SIZE, MPI_RANK, MPI_COMM
+from ocgis.vmachine.mpi import MPI_SIZE, MPI_RANK, MPI_COMM, DummyMPIComm, DummyRequest
 
 
 class TestOcgVM(TestBase):
@@ -65,6 +65,20 @@ class TestOcgVM(TestBase):
 
         desired = field.data_variables[0].get_value().sum()
         self.assertAlmostEqual(actual, desired)
+
+    def test_system_dummy_comm_Isend_Irecv(self):
+        comm = DummyMPIComm()
+        send_data = [['foo_send'], None]
+        req = comm.Isend(send_data, tag='one')
+        self.assertIsInstance(req, DummyRequest)
+        req.wait()
+        req.Test()
+        recv_data = [[None], None]
+        req = comm.Irecv(recv_data, tag='one')
+        req.wait()
+        req.Test()
+        self.assertEqual(recv_data[0][0], send_data[0][0])
+        self.assertEqual(comm._send_recv, {0: {}})
 
     @attr('mpi')
     def test_barrier(self):

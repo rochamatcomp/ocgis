@@ -10,6 +10,7 @@ from ocgis import constants
 from ocgis.base import AbstractOcgisObject, raise_if_empty
 from ocgis.constants import DataType, SourceIndexType
 from ocgis.exc import DimensionNotFound
+from ocgis.util.addict import Dict
 from ocgis.util.helpers import get_optimal_slice_from_array, get_iter, get_group
 
 try:
@@ -28,6 +29,10 @@ else:
 
 
 class DummyMPIComm(object):
+
+    def __init__(self):
+        self._send_recv = Dict()
+
     def Barrier(self):
         pass
 
@@ -55,23 +60,27 @@ class DummyMPIComm(object):
     def Incl(self, *args, **kwargs):
         return self
 
-    def Irecv(self, *args, **kwargs):
-        pass
-
-    def recv(self, *args, **kwargs):
-        pass
-
     def reduce(self, *args, **kwargs):
         return args[0]
 
     def scatter(self, *args, **kwargs):
         return args[0][0]
 
-    def Isend(self, *args, **kwargs):
-        pass
+    def Irecv(self, payload, source=0, tag=None):
+        stored = self._send_recv[source].pop(tag, '__ocgis_bad__')
+        assert (stored != '__ocgis_bad__')
+        payload[0] = stored
+        return DummyRequest()
+
+    def recv(self, *args, **kwargs):
+        return self.Irecv(*args, **kwargs)
+
+    def Isend(self, payload, dest=0, tag=None):
+        self._send_recv[dest][tag] = payload[0]
+        return DummyRequest()
 
     def send(self, *args, **kwargs):
-        pass
+        return self.Isend(*args, **kwargs)
 
 
 if MPI_ENABLED and MPI.COMM_WORLD.Get_size() > 1:
@@ -81,6 +90,15 @@ else:
     COMM_NULL = constants.MPI_COMM_NULL_VALUE
 MPI_SIZE = MPI_COMM.Get_size()
 MPI_RANK = MPI_COMM.Get_rank()
+
+
+class DummyRequest(AbstractOcgisObject):
+
+    def Test(self):
+        return True
+
+    def wait(self):
+        return True
 
 
 class OcgDist(AbstractOcgisObject):
