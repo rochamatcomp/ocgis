@@ -67,8 +67,7 @@ class DummyMPIComm(object):
         return args[0][0]
 
     def Irecv(self, payload, source=0, tag=None):
-        stored = self._send_recv[source].pop(tag, '__ocgis_bad__')
-        assert (stored != '__ocgis_bad__')
+        stored = self._send_recv[source].pop(tag)
         payload[0] = stored
         return DummyRequest()
 
