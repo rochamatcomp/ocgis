@@ -664,6 +664,14 @@ class AbstractSpatialVariable(AbstractOperationsSpatialObject, SourcedVariable):
         return ret
 
 
+def create_split_polygons(geom, split_shape):
+    minx, miny, maxx, maxy = geom.bounds
+    rows = np.linspace(miny, maxy, split_shape[0])
+    cols = np.linspace(minx, maxx, split_shape[1])
+
+    return get_split_polygons_from_meshgrid_vectors(cols, rows)
+
+
 def get_extent_global(container):
     raise_if_empty(container)
 
@@ -686,36 +694,6 @@ def get_extent_global(container):
     ret = vm.bcast(ret)
 
     return ret
-
-
-def iter_spatial_decomposition(sobj, splits, **kwargs):
-    # tdk: DOC: collective
-
-    # Adjust the split definition to work with polygon creation call. --------------------------------------------------
-    len_splits = len(splits)
-    # Only splits along two dimensions.
-    assert (len_splits <= 2)
-    if len_splits == 1:
-        split_shape = (splits[0], 1)
-    else:
-        split_shape = splits
-    # ------------------------------------------------------------------------------------------------------------------
-
-    # For each split polygon, subset the target spatial object and yield it. -------------------------------------------
-    extent_global = sobj.extent_global
-    bbox = box(*extent_global)
-    split_polygons = get_split_polygons(bbox, split_shape)
-    for sp in split_polygons:
-        yield sobj.get_intersects(sp)
-    # ------------------------------------------------------------------------------------------------------------------
-
-
-def get_split_polygons(geom, split_shape):
-    minx, miny, maxx, maxy = geom.bounds
-    rows = np.linspace(miny, maxy, split_shape[0])
-    cols = np.linspace(minx, maxx, split_shape[1])
-
-    return get_split_polygons_from_meshgrid_vectors(cols, rows)
 
 
 def get_split_polygons_from_meshgrid_vectors(cols, rows):
@@ -742,3 +720,25 @@ def get_split_polygons_from_meshgrid_vectors(cols, rows):
         fill[row, col] = polygon
 
     return fill.flatten().tolist()
+
+
+def iter_spatial_decomposition(sobj, splits, **kwargs):
+    # tdk: DOC: collective
+
+    # Adjust the split definition to work with polygon creation call. --------------------------------------------------
+    len_splits = len(splits)
+    # Only splits along two dimensions.
+    assert (len_splits <= 2)
+    if len_splits == 1:
+        split_shape = (splits[0], 1)
+    else:
+        split_shape = splits
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # For each split polygon, subset the target spatial object and yield it. -------------------------------------------
+    extent_global = sobj.extent_global
+    bbox = box(*extent_global)
+    split_polygons = create_split_polygons(bbox, split_shape)
+    for sp in split_polygons:
+        yield sobj.get_intersects(sp)
+    # ------------------------------------------------------------------------------------------------------------------

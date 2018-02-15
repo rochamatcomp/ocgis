@@ -20,7 +20,7 @@ from ocgis.constants import KeywordArgument, HeaderName, VariableName, Dimension
     WrappedState
 from ocgis.environment import ogr
 from ocgis.exc import EmptySubsetError, RequestableFeature, NoInteriorsError
-from ocgis.spatial.base import AbstractSpatialVariable, get_split_polygons
+from ocgis.spatial.base import AbstractSpatialVariable, create_split_polygons
 from ocgis.util.addict import Dict
 from ocgis.util.helpers import iter_array, get_trimmed_array_by_mask, get_swap_chain, find_index, \
     iter_exploded_geometries, get_iter
@@ -1263,7 +1263,7 @@ def get_split_polygon_by_node_threshold(geom, node_threshold):
         n.split_shape = tuple([int(np.ceil(ns)) for ns in [n.split_shape] * 2])
 
         # Get polygons to use for splitting.
-        n.splitters = get_split_polygons(n['geom'], n.split_shape)
+        n.splitters = create_split_polygons(n['geom'], n.split_shape)
 
         # Create the individual splits:
         n.splits = []
