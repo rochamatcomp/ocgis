@@ -373,10 +373,9 @@ class GridChunker(AbstractOcgisObject):
 
     def iter_dst_grid_subsets(self, yield_slice=False):
         """
-        Using slices from ``iter_dst_grid_slices``, yield destination grid subsets.
+        Yield destination grid subsets.
 
         :param bool yield_slice: If ``True``, yield the slice used on the destination grid.
-        :return: The sliced grid object.
         :rtype: :class:`ocgis.spatial.grid.AbstractGrid`
         """
 
