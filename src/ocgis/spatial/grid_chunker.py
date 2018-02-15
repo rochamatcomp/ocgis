@@ -5,7 +5,6 @@ import netCDF4 as nc
 import numpy as np
 from shapely.geometry import box
 
-import ocgis
 from ocgis import Dimension, vm
 from ocgis import Variable
 from ocgis.base import AbstractOcgisObject, grid_abstraction_scope
@@ -378,7 +377,7 @@ class GridChunker(AbstractOcgisObject):
 
         :param bool yield_slice: If ``True``, yield the slice used on the destination grid.
         :return: The sliced grid object.
-        :rtype: :class:`ocgis.Grid`
+        :rtype: :class:`ocgis.spatial.grid.AbstractGrid`
         """
 
         for slc in self.iter_dst_grid_slices():
@@ -390,12 +389,10 @@ class GridChunker(AbstractOcgisObject):
 
     def iter_src_grid_subsets(self, yield_dst=False):
         """
-        Yield source grid subsets using the extent of its associated destination grid subset.
+        Yield source grid subset using the extent of its associated destination grid subset.
 
         :param bool yield_dst: If ``True``, yield the destination subset as well as the source grid subset.
-        :return: The source grid if ``yield_dst`` is ``False``, otherwise a three-element tuple in the form
-         ``(<source grid subset>, <destination grid subset>, <destination grid slice>)``.
-        :rtype: :class:`ocgis.Grid` or (:class:`ocgis.Grid`, :class:`ocgis.Grid`, dict)
+        :rtype: tuple(:class:`ocgis.spatial.grid.AbstractGrid`, `slice-like`)
         """
 
         if yield_dst:
