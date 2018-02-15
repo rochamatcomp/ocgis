@@ -1,15 +1,17 @@
 import abc
+import itertools
 from abc import abstractmethod
 
 import numpy as np
 import six
 from pyproj import Proj, transform
-from shapely.geometry import box
+from shapely.geometry import box, Polygon
 
 from ocgis import Variable, SourcedVariable, vm
 from ocgis.base import raise_if_empty, is_field, AbstractInterfaceObject
 from ocgis.constants import KeywordArgument, VariableName, WrapAction, DMK
 from ocgis.exc import GridDeficientError
+from ocgis.util.helpers import get_extrapolated_corners_esmf, create_ocgis_corners_from_esmf_corners
 from ocgis.variable import crs
 from ocgis.variable.base import AbstractContainer
 
@@ -684,3 +686,59 @@ def get_extent_global(container):
     ret = vm.bcast(ret)
 
     return ret
+
+
+def iter_spatial_decomposition(sobj, splits, **kwargs):
+    # tdk: DOC: collective
+
+    # Adjust the split definition to work with polygon creation call. --------------------------------------------------
+    len_splits = len(splits)
+    # Only splits along two dimensions.
+    assert (len_splits <= 2)
+    if len_splits == 1:
+        split_shape = (splits[0], 1)
+    else:
+        split_shape = splits
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # For each split polygon, subset the target spatial object and yield it. -------------------------------------------
+    extent_global = sobj.extent_global
+    bbox = box(*extent_global)
+    split_polygons = get_split_polygons(bbox, split_shape)
+    for sp in split_polygons:
+        yield sobj.get_intersects(sp)
+    # ------------------------------------------------------------------------------------------------------------------
+
+
+def get_split_polygons(geom, split_shape):
+    minx, miny, maxx, maxy = geom.bounds
+    rows = np.linspace(miny, maxy, split_shape[0])
+    cols = np.linspace(minx, maxx, split_shape[1])
+
+    return get_split_polygons_from_meshgrid_vectors(cols, rows)
+
+
+def get_split_polygons_from_meshgrid_vectors(cols, rows):
+    cols, rows = np.meshgrid(cols, rows)
+
+    cols_corners = get_extrapolated_corners_esmf(cols)
+    cols_corners = create_ocgis_corners_from_esmf_corners(cols_corners)
+
+    rows_corners = get_extrapolated_corners_esmf(rows)
+    rows_corners = create_ocgis_corners_from_esmf_corners(rows_corners)
+
+    corners = np.vstack((rows_corners, cols_corners))
+    corners = corners.reshape([2] + list(cols_corners.shape))
+    range_row = range(rows.shape[0])
+    range_col = range(cols.shape[1])
+
+    fill = np.zeros(cols.shape, dtype=object)
+
+    for row, col in itertools.product(range_row, range_col):
+        current_corner = corners[:, row, col]
+        coords = np.hstack((current_corner[1, :].reshape(-1, 1),
+                            current_corner[0, :].reshape(-1, 1)))
+        polygon = Polygon(coords)
+        fill[row, col] = polygon
+
+    return fill.flatten().tolist()

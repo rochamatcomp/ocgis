@@ -1,4 +1,3 @@
-import itertools
 from collections import deque
 from copy import deepcopy
 from itertools import product
@@ -21,10 +20,10 @@ from ocgis.constants import KeywordArgument, HeaderName, VariableName, Dimension
     WrappedState
 from ocgis.environment import ogr
 from ocgis.exc import EmptySubsetError, RequestableFeature, NoInteriorsError
-from ocgis.spatial.base import AbstractSpatialVariable
+from ocgis.spatial.base import AbstractSpatialVariable, get_split_polygons
 from ocgis.util.addict import Dict
 from ocgis.util.helpers import iter_array, get_trimmed_array_by_mask, get_swap_chain, find_index, \
-    iter_exploded_geometries, get_iter, get_extrapolated_corners_esmf, create_ocgis_corners_from_esmf_corners
+    iter_exploded_geometries, get_iter
 from ocgis.variable.base import get_dimension_lengths, ObjectType
 from ocgis.variable.crs import Cartesian
 from ocgis.variable.dimension import create_distributed_dimension, Dimension
@@ -1239,40 +1238,6 @@ def get_node_count(geom):
     for ii in get_iter(geom, dtype=Polygon):
         node_count += len(ii.exterior.coords)
     return node_count
-
-
-def get_split_polygons(geom, split_shape):
-    minx, miny, maxx, maxy = geom.bounds
-    rows = np.linspace(miny, maxy, split_shape[0])
-    cols = np.linspace(minx, maxx, split_shape[1])
-
-    return get_split_polygons_from_meshgrid_vectors(cols, rows)
-
-
-def get_split_polygons_from_meshgrid_vectors(cols, rows):
-    cols, rows = np.meshgrid(cols, rows)
-
-    cols_corners = get_extrapolated_corners_esmf(cols)
-    cols_corners = create_ocgis_corners_from_esmf_corners(cols_corners)
-
-    rows_corners = get_extrapolated_corners_esmf(rows)
-    rows_corners = create_ocgis_corners_from_esmf_corners(rows_corners)
-
-    corners = np.vstack((rows_corners, cols_corners))
-    corners = corners.reshape([2] + list(cols_corners.shape))
-    range_row = range(rows.shape[0])
-    range_col = range(cols.shape[1])
-
-    fill = np.zeros(cols.shape, dtype=object)
-
-    for row, col in itertools.product(range_row, range_col):
-        current_corner = corners[:, row, col]
-        coords = np.hstack((current_corner[1, :].reshape(-1, 1),
-                            current_corner[0, :].reshape(-1, 1)))
-        polygon = Polygon(coords)
-        fill[row, col] = polygon
-
-    return fill.flatten().tolist()
 
 
 def get_split_polygon_by_node_threshold(geom, node_threshold):
