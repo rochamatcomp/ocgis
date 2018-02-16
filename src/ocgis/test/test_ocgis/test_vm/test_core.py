@@ -72,12 +72,15 @@ class TestOcgVM(TestBase):
         recv_data = [[None], None]
         recv_req = comm.Irecv(recv_data, tag='one')
 
+        self.assertFalse(recv_req.Test())
+
         send_data = [['foo_send'], None]
         req = comm.Isend(send_data, tag='one')
         self.assertIsInstance(req, DummyRequest)
         req.wait()
         req.Test()
 
+        self.assertTrue(recv_req.Test())
         recv_req.wait()
 
         self.assertEqual(recv_data[0][0], send_data[0][0])

@@ -67,9 +67,17 @@ class DummyMPIComm(object):
         return args[0][0]
 
     def Irecv(self, payload, source=0, tag=None):
-        def _irecv_callback_(ipayload, icomm, isource, itag):
-            stored = icomm._send_recv[isource].pop(itag)
-            ipayload[0] = stored
+        def _irecv_callback_(ipayload, icomm, isource, itag, mode):
+            ret = False
+            if mode == 'test':
+                ret = itag in icomm._send_recv[isource]
+            elif mode == 'get' or ret:
+                stored = icomm._send_recv[isource].pop(itag)
+                ipayload[0] = stored
+                ret = True
+            else:
+                raise NotImplementedError(mode)
+            return ret
 
         the_callback = partial(_irecv_callback_, payload, self, source, tag)
 
@@ -101,15 +109,20 @@ class DummyRequest(AbstractOcgisObject):
         self._callback = callback
 
     def Test(self):
-        self._execute_()
+        if self._callback is None:
+            ret = True
+        else:
+            ret = self._callback('test')
+        return ret
 
     def wait(self):
-        self._execute_()
-
-    def _execute_(self):
-        if self._callback is not None:
-            self._callback()
-        return True
+        if self._callback is None:
+            ret = True
+        else:
+            while not self.Test():
+                continue
+            ret = self._callback('get')
+        return ret
 
 
 class OcgDist(AbstractOcgisObject):
