@@ -897,7 +897,8 @@ class Variable(AbstractContainer, Attributes):
 
     def get_masked_value(self):
         """
-        :return: The variable's value as a masked array.
+        Return the variable's value as a masked array.
+
         :rtype: :class:`numpy.ma.MaskedArray`
         """
         if isinstance(self.dtype, ObjectType):
