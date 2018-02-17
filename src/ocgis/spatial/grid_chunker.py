@@ -9,6 +9,7 @@ from ocgis.base import AbstractOcgisObject, grid_abstraction_scope
 from ocgis.collection.field import Field
 from ocgis.constants import GridChunkerConstants, RegriddingRole, Topology, DMK
 from ocgis.driver.request.core import RequestDataset
+from ocgis.spatial.base import iter_spatial_decomposition
 from ocgis.spatial.geomc import AbstractGeometryCoordinates
 from ocgis.spatial.grid import GridUnstruct, AbstractGrid, Grid
 from ocgis.util.logging_ocgis import ocgis_lh
@@ -389,13 +390,20 @@ class GridChunker(AbstractOcgisObject):
         :param bool yield_slice: If ``True``, yield the slice used on the destination grid.
         :rtype: :class:`ocgis.spatial.grid.AbstractGrid`
         """
-
-        for slc in self.iter_dst_grid_slices():
-            sub = self.dst_grid.get_distributed_slice(slc)
-            if yield_slice:
-                yield sub, slc
-            else:
-                yield sub
+        if self.use_spatial_decomp:
+            for sub, slc in iter_spatial_decomposition(self.dst_grid, self.nchunks_dst, optimized_bbox_subset=True):
+                if yield_slice:
+                    slc = {d.name: slc[ii] for ii, d in enumerate(sub.dimensions)}
+                    yield sub, slc
+                else:
+                    yield sub
+        else:
+            for slc in self.iter_dst_grid_slices():
+                sub = self.dst_grid.get_distributed_slice(slc)
+                if yield_slice:
+                    yield sub, slc
+                else:
+                    yield sub
 
     def iter_src_grid_subsets(self, yield_dst=False):
         """

@@ -711,6 +711,8 @@ def get_extent_global(container):
 
 def iter_spatial_decomposition(sobj, splits, **kwargs):
     # tdk: DOC: collective
+    kwargs = kwargs.copy()
+    kwargs[KeywordArgument.RETURN_SLICE] = True
 
     # Adjust the split definition to work with polygon creation call. --------------------------------------------------
     len_splits = len(splits)

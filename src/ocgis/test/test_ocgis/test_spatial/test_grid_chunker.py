@@ -119,7 +119,7 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         dst_grid = self.get_gridxy_global(resolution=20., crs=Spherical())
 
         gs = GridChunker(src_grid, dst_grid, (3, 3), check_contains=False, src_grid_resolution=10.,
-                         paths=self.fixture_paths, genweights=genweights)
+                         paths=self.fixture_paths, genweights=genweights, use_spatial_decomp=True)
 
         gs.write_chunks()
 
