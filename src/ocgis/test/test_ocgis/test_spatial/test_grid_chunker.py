@@ -106,7 +106,6 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         gu.parent.write(ufile)
 
     def run_system_splitting_unstructured(self, genweights):
-        # tdk: LAST-FIX: fails with mpi4py import when it is not installed. should pass in serial.
         env.CLOBBER_UNITS_ON_BOUNDS = False
 
         ufile = self.get_temporary_file_path('ugrid.nc')
