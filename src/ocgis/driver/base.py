@@ -12,7 +12,7 @@ from ocgis import vm
 from ocgis.base import AbstractOcgisObject, raise_if_empty
 from ocgis.base import get_variable_names
 from ocgis.collection.field import Field
-from ocgis.constants import MPIWriteMode, TagName, KeywordArgument, OcgisConvention
+from ocgis.constants import MPIWriteMode, TagName, KeywordArgument, OcgisConvention, VariableName
 from ocgis.driver.dimension_map import DimensionMap
 from ocgis.exc import DefinitionValidationError, NoDataVariablesFound, DimensionMapError, VariableMissingMetadataError, \
     GridDeficientError
@@ -472,6 +472,56 @@ class AbstractDriver(AbstractOcgisObject):
         meta = deepcopy(self.metadata_source)
         _jsonformat_(meta)
         return json.dumps(meta)
+
+    @staticmethod
+    def get_spatial_mask(*args, **kwargs):
+        # tdk: doc
+
+        # tdk: cln: this method should be moved and renamed. it is a spatial container operation and not specific to a grid
+        from ocgis.spatial.grid import create_grid_mask_variable
+
+        args = list(args)
+        sobj = args[0]
+        args = args[1:]
+
+        create = kwargs.get(KeywordArgument.CREATE, False)
+        mask_variable = sobj.mask_variable
+        ret = None
+        if mask_variable is None:
+            if create:
+                mask_variable = create_grid_mask_variable(VariableName.SPATIAL_MASK, None, sobj.dimensions)
+                sobj.set_mask(mask_variable)
+        if mask_variable is not None:
+            ret = mask_variable.get_mask(*args, **kwargs)
+            if mask_variable.attrs.get('ocgis_role') != 'spatial_mask':
+                msg = 'Mask variable "{}" must have an "ocgis_role" attribute with a value of "spatial_mask".'.format(
+                    ret.name)
+                raise ValueError(msg)
+        return ret
+
+    @staticmethod
+    def set_spatial_mask(sobj, value, cascade=False):
+        # tdk: doc
+        # tdk: order
+        from ocgis.spatial.grid import create_grid_mask_variable, grid_set_mask_cascade
+        from ocgis.variable.base import Variable
+
+        if isinstance(value, Variable):
+            sobj.parent.add_variable(value, force=True)
+            mask_variable = value
+        else:
+            mask_variable = sobj.mask_variable
+            if mask_variable is None:
+                dimensions = sobj.dimensions
+                mask_variable = create_grid_mask_variable(VariableName.SPATIAL_MASK, value, dimensions)
+                sobj.parent.add_variable(mask_variable)
+            else:
+                mask_variable.set_mask(value)
+        sobj.dimension_map.set_spatial_mask(mask_variable)
+
+        if cascade:
+            # tdk: this cascade should operation on all variables in the collection?
+            grid_set_mask_cascade(sobj)
 
     def get_variable_collection(self, **kwargs):
         """Here for backwards compatibility."""

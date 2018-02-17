@@ -235,55 +235,26 @@ class AbstractSpatialContainer(AbstractContainer, AbstractOperationsSpatialObjec
 
     def get_mask(self, *args, **kwargs):
         """
-        The grid's mask is stored independently from the coordinate variables' masks. The mask is actually a variable
-        containing a mask. This approach ensures the mask may be persisted to file and retrieved/modified leaving all
-        coordinate variables intact.
+        A spatial container's mask is stored independently from the coordinate variables' masks. The mask is actually a
+        variable containing a mask. This approach ensures the mask may be persisted to file and retrieved/modified
+        leaving all coordinate variables intact.
 
         .. note:: See :meth:`~ocgis.Variable.get_mask` for documentation.
         """
-        from ocgis.spatial.grid import create_grid_mask_variable
-
-        create = kwargs.get(KeywordArgument.CREATE, False)
-        mask_variable = self.mask_variable
-        ret = None
-        if mask_variable is None:
-            if create:
-                mask_variable = create_grid_mask_variable(VariableName.SPATIAL_MASK, None, self.dimensions)
-                self.set_mask(mask_variable)
-        if mask_variable is not None:
-            ret = mask_variable.get_mask(*args, **kwargs)
-            if mask_variable.attrs.get('ocgis_role') != 'spatial_mask':
-                msg = 'Mask variable "{}" must have an "ocgis_role" attribute with a value of "spatial_mask".'.format(
-                    ret.name)
-                raise ValueError(msg)
-        return ret
+        args = list(args)
+        args.insert(0, self)
+        return self.driver.get_spatial_mask(*args, **kwargs)
 
     def set_mask(self, value, cascade=False):
         """
-        Set the grid's mask from boolean array or variable.
+        Set the spatial container's mask from a boolean array or variable.
 
         :param value: A mask array having the same shape as the grid. This may also be a variable with the same
          dimensions.
         :type value: :class:`numpy.ndarray` | :class:`~ocgis.Variable`
-        :param cascade: If ``True``, cascade the mask along shared dimension on the grid.
+        :param cascade: If ``True``, cascade the mask along shared dimensions on the spatial container.
         """
-        from ocgis.spatial.grid import create_grid_mask_variable, grid_set_mask_cascade
-
-        if isinstance(value, Variable):
-            self.parent.add_variable(value, force=True)
-            mask_variable = value
-        else:
-            mask_variable = self.mask_variable
-            if mask_variable is None:
-                dimensions = self.dimensions
-                mask_variable = create_grid_mask_variable(VariableName.SPATIAL_MASK, value, dimensions)
-                self.parent.add_variable(mask_variable)
-            else:
-                mask_variable.set_mask(value)
-        self.dimension_map.set_spatial_mask(mask_variable)
-
-        if cascade:
-            grid_set_mask_cascade(self)
+        self.driver.set_spatial_mask(self, value, cascade=cascade)
 
     @staticmethod
     def _get_parent_class_():
