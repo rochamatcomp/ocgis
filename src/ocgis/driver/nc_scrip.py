@@ -2,7 +2,7 @@ import numpy as np
 
 from ocgis import DimensionMap, env, constants, vm
 from ocgis.constants import DriverKey, DMK, Topology, MPIOps
-from ocgis.driver.base import AbstractUnstructuredDriver
+from ocgis.driver.base import AbstractUnstructuredDriver, AbstractDriver
 from ocgis.driver.nc import DriverNetcdf
 from ocgis.util.helpers import create_unique_global_array
 from ocgis.vmachine.mpi import hgather
@@ -45,6 +45,10 @@ class DriverNetcdfSCRIP(AbstractUnstructuredDriver, DriverNetcdf):
             topo.set_variable(DMK.X, 'grid_corner_lon', dimension='grid_size')
             topo.set_variable(DMK.Y, 'grid_corner_lat', dimension='grid_size')
 
+        if 'grid_imask' in group_metadata['variables']:
+            # Use the intrinsic SCRIP default attributes associated with the variable.
+            ret.set_spatial_mask('grid_imask', default_attrs={})
+
         # The isomorphic property covers all possible mesh topologies.
         ret.set_property(DMK.IS_ISOMORPHIC, True)
 
@@ -52,6 +56,18 @@ class DriverNetcdfSCRIP(AbstractUnstructuredDriver, DriverNetcdf):
 
     def get_distributed_dimension_name(self, dimension_map, dimensions_metadata):
         return 'grid_size'
+
+    @staticmethod
+    def get_spatial_mask(*args, **kwargs):
+        ret = AbstractDriver.get_spatial_mask(*args, **kwargs)
+        print(ret)
+        tkk
+
+    @staticmethod
+    def validate_spatial_mask(mask_variable):
+        if mask_variable.name != 'grid_imask':
+            msg = 'For SCRIP data, the mask variable must be named "grid_imask".'
+            raise ValueError(msg)
 
     @classmethod
     def _get_field_write_target_(cls, field):

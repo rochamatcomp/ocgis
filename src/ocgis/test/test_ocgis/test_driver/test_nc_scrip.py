@@ -126,6 +126,8 @@ class TestDriverNetcdfSCRIP(TestBase, FixtureDriverNetcdfSCRIP):
 
         dmap = d.create_dimension_map(meta)
         self.assertIsInstance(dmap, DimensionMap)
+        self.assertIsNotNone(dmap.get_spatial_mask())
+        self.assertNotIn('ocgis_role', dmap.get_property(DMK.SPATIAL_MASK)['attrs'])
 
         run_topo_tst(self, dmap)
 
@@ -140,6 +142,8 @@ class TestDriverNetcdfSCRIP(TestBase, FixtureDriverNetcdfSCRIP):
 
         self.assertEqual(field.crs, Spherical())
         self.assertEqual(field.driver.key, DriverKey.NETCDF_SCRIP)
+
+        # Test grid structure.
         self.assertIsInstance(field.grid, GridUnstruct)
         desired = meta['dimensions']['grid_size']['size']
         run_topo_tst(self, field.grid.dimension_map)
@@ -148,6 +152,11 @@ class TestDriverNetcdfSCRIP(TestBase, FixtureDriverNetcdfSCRIP):
         self.assertEqual(desired, actual)
         self.assertTrue(field.grid.is_isomorphic)
         self.assertEqual(field.grid.abstraction, Topology.POLYGON)
+
+        # Test grid masking.
+        grid = field.grid
+        self.assertTrue(grid.has_mask)
+        self.assertIsNotNone(field.grid.get_mask())
 
         run_topo_tst(self, field.grid.dimension_map)
 

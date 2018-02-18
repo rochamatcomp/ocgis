@@ -492,11 +492,8 @@ class AbstractDriver(AbstractOcgisObject):
                 mask_variable = create_grid_mask_variable(VariableName.SPATIAL_MASK, None, sobj.dimensions)
                 sobj.set_mask(mask_variable)
         if mask_variable is not None:
+            sobj.driver.validate_spatial_mask(mask_variable)
             ret = mask_variable.get_mask(*args, **kwargs)
-            if mask_variable.attrs.get('ocgis_role') != 'spatial_mask':
-                msg = 'Mask variable "{}" must have an "ocgis_role" attribute with a value of "spatial_mask".'.format(
-                    ret.name)
-                raise ValueError(msg)
         return ret
 
     @staticmethod
@@ -695,6 +692,14 @@ class AbstractDriver(AbstractOcgisObject):
                 msg = 'Output format not supported for driver "{0}". Supported output formats are: {1}'.format(cls.key,
                                                                                                                cls.output_formats)
                 ocgis_lh(logger='driver', exc=DefinitionValidationError('output_format', msg))
+
+    @staticmethod
+    def validate_spatial_mask(mask_variable):
+        # tdk: DOC
+        if mask_variable.attrs.get('ocgis_role') != 'spatial_mask':
+            msg = 'Mask variable "{}" must have an "ocgis_role" attribute with a value of "spatial_mask".'.format(
+                mask_variable.name)
+            raise ValueError(msg)
 
     def write_variable(self, *args, **kwargs):
         """Write a variable. Not applicable for tabular formats."""

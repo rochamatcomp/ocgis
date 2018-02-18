@@ -424,17 +424,19 @@ class DimensionMap(AbstractOcgisObject):
         assert key in DMK.get_special_entry_keys()
         self._storage[key] = value
 
-    def set_spatial_mask(self, variable, attrs=None):
+    def set_spatial_mask(self, variable, attrs=None, default_attrs=None):
         """
         Set the spatial mask variable for the dimension map. If ``attrs`` is not ``None``, then ``attrs`` >
         ``variable.attrs`` (if ``variable`` is not a string) > default attributes.
         
         :param variable: The spatial mask variable.
-        :param dict attrs: Attributes to associate with the spatial mask variable.
+        :param dict attrs: Attributes to associate with the spatial mask variable *in addition* to default attributes.
+        :param dict default_attrs: If provided, use these attributes as default spatial mask attributes.
         :type variable: :class:`~ocgis.Variable` | :class:`str`
         """
 
-        default_attrs = deepcopy(DIMENSION_MAP_TEMPLATE[DMK.SPATIAL_MASK][DMK.ATTRS])
+        if default_attrs is None:
+            default_attrs = deepcopy(DIMENSION_MAP_TEMPLATE[DMK.SPATIAL_MASK][DMK.ATTRS])
 
         try:
             vattrs = deepcopy(variable.attrs)

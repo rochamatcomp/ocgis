@@ -164,6 +164,12 @@ class TestDimensionMap(TestBase):
         attrs = dmap.get_attrs(DMK.SPATIAL_MASK)
         self.assertIn('please keep me', attrs)
 
+        # Test default attributes are not added.
+        dmap = DimensionMap()
+        dmap.set_spatial_mask('foo', default_attrs={'blue': 'world'})
+        prop = dmap.get_property(DMK.SPATIAL_MASK)
+        self.assertEqual(prop['attrs'], {'blue': 'world'})
+
     def test_set_variable(self):
         var = Variable(name='test', value=[1, 2], dimensions='two')
         dmap = DimensionMap()
