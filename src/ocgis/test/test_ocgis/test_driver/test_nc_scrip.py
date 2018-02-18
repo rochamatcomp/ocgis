@@ -2,7 +2,6 @@ import itertools
 
 import numpy as np
 from mock import mock
-
 from ocgis import RequestDataset, DimensionMap, GridUnstruct, PointGC, Field, Variable, Dimension
 from ocgis.constants import DriverKey, DMK, Topology
 from ocgis.driver.nc_scrip import DriverNetcdfSCRIP
@@ -156,7 +155,9 @@ class TestDriverNetcdfSCRIP(TestBase, FixtureDriverNetcdfSCRIP):
         # Test grid masking.
         grid = field.grid
         self.assertTrue(grid.has_mask)
-        self.assertIsNotNone(field.grid.get_mask())
+        for _ in range(3):
+            self.assertIsNotNone(field.grid.get_mask())
+            self.assertFalse(field.grid.get_mask().any())
 
         run_topo_tst(self, field.grid.dimension_map)
 

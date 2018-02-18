@@ -9,7 +9,6 @@ import six
 from numpy.core.multiarray import ndarray
 from numpy.ma import MaskedArray
 from numpy.ma.core import MaskedConstant
-
 from ocgis import constants, vm
 from ocgis.base import AbstractNamedObject, get_dimension_names, get_variable_names, get_variables, iter_dict_slices, \
     orphaned, raise_if_empty
@@ -1360,6 +1359,14 @@ class Variable(AbstractContainer, Attributes):
         implementations is in :class:`~ocgis.variable.SourcedVariable`
         """
 
+    def m(self):
+        """See :meth:`ocgis.Variable.get_mask"""
+        return self.get_mask()
+
+    def mv(self):
+        """See :meth:`ocgis.Variable.get_masked_value"""
+        return self.get_masked_value()
+
     def reshape(self, *args):
         assert not self.has_bounds
 
@@ -1464,6 +1471,10 @@ class Variable(AbstractContainer, Attributes):
             self._name_ugid = variable.name
             if attr_link_name is not None:
                 self.attrs[attr_link_name] = variable.name
+
+    def v(self):
+        """See :meth:`ocgis.Variable.get_value`"""
+        return self.get_value()
 
     def write(self, *args, **kwargs):
         """

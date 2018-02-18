@@ -1,8 +1,9 @@
 import numpy as np
 
 from ocgis import DimensionMap, env, constants, vm
+from ocgis.base import raise_if_empty
 from ocgis.constants import DriverKey, DMK, Topology, MPIOps
-from ocgis.driver.base import AbstractUnstructuredDriver, AbstractDriver
+from ocgis.driver.base import AbstractUnstructuredDriver
 from ocgis.driver.nc import DriverNetcdf
 from ocgis.util.helpers import create_unique_global_array
 from ocgis.vmachine.mpi import hgather
@@ -59,9 +60,23 @@ class DriverNetcdfSCRIP(AbstractUnstructuredDriver, DriverNetcdf):
 
     @staticmethod
     def get_spatial_mask(*args, **kwargs):
-        ret = AbstractDriver.get_spatial_mask(*args, **kwargs)
-        print(ret)
-        tkk
+        """
+        Get or create the SCRIP spatial mask. Arguments and keyword arguments in signature are for driver
+        compatibility only.
+        """
+        sobj = args[0]
+        raise_if_empty(sobj)
+
+        ret = None
+        if sobj.has_mask:
+            maskvar = sobj.parent['grid_imask']
+            if not maskvar.has_allocated_value:
+                v = maskvar.v()
+                ret = v == 0
+                maskvar.set_mask(ret)
+            else:
+                ret = maskvar.m()
+        return ret
 
     @staticmethod
     def validate_spatial_mask(mask_variable):
