@@ -4,11 +4,16 @@ from collections import deque
 
 import numpy as np
 import six
+from shapely.geometry import Point, Polygon
+from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
+from shapely.geometry.linestring import LineString
+from shapely.geometry.multipolygon import MultiPolygon
+
 from ocgis import env, vm
 from ocgis.base import raise_if_empty, is_unstructured_driver
 from ocgis.constants import KeywordArgument, GridAbstraction, VariableName, AttributeName, GridChunkerConstants, \
     RegriddingRole, DMK, MPITag, DriverKey, ConversionTarget, MPI_EMPTY_VALUE
-from ocgis.exc import RequestableFeature, AllElementsMaskedError
+from ocgis.exc import RequestableFeature
 from ocgis.spatial.base import AbstractXYZSpatialContainer
 from ocgis.util.helpers import get_formatted_slice, arange_from_dimension, create_unique_global_array
 from ocgis.util.logging_ocgis import ocgis_lh
@@ -16,10 +21,6 @@ from ocgis.variable.base import get_dslice, Variable
 from ocgis.variable.dimension import create_distributed_dimension
 from ocgis.variable.geom import GeometryProcessor, GeometryVariable
 from ocgis.vmachine.mpi import cancel_free_requests
-from shapely.geometry import Point, Polygon
-from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
-from shapely.geometry.linestring import LineString
-from shapely.geometry.multipolygon import MultiPolygon
 
 
 def format_gridunstruct_return(func):
@@ -669,31 +670,32 @@ class AbstractGeometryCoordinates(AbstractXYZSpatialContainer):
     def _get_extent_(self):
         # Get the x and y coordinate values.
         x, y = self.x.v(), self.y.v()
-        # Treat coordinates differently if there is a grid mask.
-        if self.has_mask:
-            # Name of the mask variable dimension.
-            maskdim = self.mask_variable.dimensions[0].name
-            # Location of the mask dimension in the coordinate variable dimensions.
-            maskidx = self.x.dimension_names.index(maskdim)
-            # Only works if the mask dimension is the first dimension.
-            assert maskidx == 0
-            # Get the actual boolean mask values.
-            mask = self.get_mask()
-            # If everything is masked, there is nothing to do.
-            if mask.all():
-                raise AllElementsMaskedError
 
-            # If there are multiple dimensions in the coordinate variable. Adjust the mask accordingly.
-            if mask.shape != x.shape:
-                nmask = np.zeros(x.shape, dtype=bool)
-                for ii in mask.flat:
-                    if ii:
-                        nmask[ii, :] = True
-                mask = nmask
-
-            # Convert coordinate arrays to masked arrays.
-            x = np.ma.array(x, mask=mask)
-            y = np.ma.array(y, mask=mask)
+        # # Treat coordinates differently if there is a grid mask.
+        # if self.has_mask:
+        #     # Name of the mask variable dimension.
+        #     maskdim = self.mask_variable.dimensions[0].name
+        #     # Location of the mask dimension in the coordinate variable dimensions.
+        #     maskidx = self.x.dimension_names.index(maskdim)
+        #     # Only works if the mask dimension is the first dimension.
+        #     assert maskidx == 0
+        #     # Get the actual boolean mask values.
+        #     mask = self.get_mask()
+        #     # If everything is masked, there is nothing to do.
+        #     if mask.all():
+        #         raise AllElementsMaskedError
+        #
+        #     # If there are multiple dimensions in the coordinate variable. Adjust the mask accordingly.
+        #     if mask.shape != x.shape:
+        #         nmask = np.zeros(x.shape, dtype=bool)
+        #         for ii in mask.flat:
+        #             if ii:
+        #                 nmask[ii, :] = True
+        #         mask = nmask
+        #
+        #     # Convert coordinate arrays to masked arrays.
+        #     x = np.ma.array(x, mask=mask)
+        #     y = np.ma.array(y, mask=mask)
 
         return x.min(), y.min(), x.max(), y.max()
 
