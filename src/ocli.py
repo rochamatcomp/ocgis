@@ -129,7 +129,7 @@ def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, 
     # Create the chunked regridding object. This is used for both chunked regridding and a regrid with a spatial subset.
     gs = GridChunker(rd_src, rd_dst, nchunks_dst=nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
                      dst_grid_resolution=dst_resolution, buffer_value=buffer_distance, redistribute=True,
-                     genweights=genweights, esmf_kwargs=esmf_kwargs)
+                     genweights=genweights, esmf_kwargs=esmf_kwargs, use_spatial_decomp='auto')
 
     # Write subsets and generate weights if requested in the grid splitter.
     # tdk: LAST-ENH need a weight only option; currently subsets are always written and so is the merged weight file

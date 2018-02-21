@@ -393,7 +393,12 @@ class GridChunker(AbstractOcgisObject):
         if self.use_spatial_decomp:
             for sub, slc in iter_spatial_decomposition(self.dst_grid, self.nchunks_dst, optimized_bbox_subset=True):
                 if yield_slice:
-                    slc = {d.name: slc[ii] for ii, d in enumerate(sub.dimensions)}
+                    # Spatial subset may be empty on a rank...
+                    if sub.is_empty:
+                        slc = None
+                    else:
+                        slc = {d.name: slc[ii] for ii, d in enumerate(sub.dimensions)}
+
                     yield sub, slc
                 else:
                     yield sub
@@ -479,7 +484,8 @@ class GridChunker(AbstractOcgisObject):
             ocgis_lh(logger='grid_chunker', msg='finished "self.src_grid.get_intersects"', level=logging.DEBUG)
 
             # Reload the data using a new source index distribution.
-            if hasattr(src_grid_subset, 'reduce_global'):
+            # tdk: LAST-HACK: SCRIP does expose "reduction" since coordinate indices are not used...driver?
+            if hasattr(src_grid_subset, 'reduce_global') and src_grid_subset.cindex is not None:
                 # Only redistribute if we have one live rank.
                 if self.redistribute and len(vm.get_live_ranks_from_object(src_grid_subset)) > 0:
                     ocgis_lh(logger='grid_chunker', msg='starting redistribute', level=logging.DEBUG)
@@ -506,7 +512,8 @@ class GridChunker(AbstractOcgisObject):
                             raise ValueError('Contains check failed.')
 
                     # Try to reduce the coordinates in the case of unstructured grid data.
-                    if hasattr(src_grid_subset, 'reduce_global'):
+                    # tdk: LAST-HACK: SCRIP does expose "reduction" since coordinate indices are not used...driver?
+                    if hasattr(src_grid_subset, 'reduce_global') and src_grid_subset.cindex is not None:
                         ocgis_lh(logger='grid_chunker', msg='starting reduce_global', level=logging.DEBUG)
                         src_grid_subset = src_grid_subset.reduce_global()
                         ocgis_lh(logger='grid_chunker', msg='finished reduce_global', level=logging.DEBUG)
