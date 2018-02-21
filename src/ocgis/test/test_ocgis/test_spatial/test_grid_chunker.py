@@ -7,17 +7,30 @@ from shapely.geometry import box
 
 from ocgis import RequestDataset, Field, vm, env
 from ocgis.base import get_variable_names
-from ocgis.constants import MPIWriteMode, GridChunkerConstants, VariableName, WrappedState
+from ocgis.constants import MPIWriteMode, GridChunkerConstants, VariableName
 from ocgis.driver.nc_ugrid import DriverNetcdfUGRID
-from ocgis.spatial.grid import GridUnstruct, Grid
-from ocgis.spatial.grid_chunker import GridChunker, does_contain
-from ocgis.test.base import attr, AbstractTestInterface, create_gridxy_global
+from ocgis.spatial.grid import GridUnstruct, Grid, AbstractGrid
+from ocgis.spatial.grid_chunker import GridChunker, does_contain, get_grid_object
+from ocgis.test.base import attr, AbstractTestInterface, create_gridxy_global, TestBase
 from ocgis.test.test_ocgis.test_driver.test_nc_scrip import FixtureDriverNetcdfSCRIP
 from ocgis.variable.base import Variable
 from ocgis.variable.crs import Spherical
 from ocgis.variable.dimension import Dimension
 from ocgis.variable.temporal import TemporalVariable
 from ocgis.vmachine.mpi import MPI_COMM, MPI_RANK
+
+
+class Test(TestBase):
+
+    def test_get_grid_object(self):
+        obj = mock.create_autospec(AbstractGrid, instance=True)
+        obj.parent = mock.Mock()
+        _ = get_grid_object(obj)
+        obj.parent.load.assert_called_once()
+
+        obj.parent.reset_mock()
+        _ = get_grid_object(obj, load=False)
+        obj.parent.assert_not_called()
 
 
 class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
@@ -194,9 +207,11 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         self.assertIsInstance(gridu, GridUnstruct)
         for g in [grid, gridu]:
             g._gc_initialize_ = mock.Mock()
+            g.parent = mock.Mock()
 
         gs = GridChunker(gridu, grid, (3, 4), paths=self.fixture_paths)
         self.assertFalse(gs.optimized_bbox_subset)
+        self.assertTrue(gs.eager)
 
         gs = GridChunker(gridu, grid, (3, 4), src_grid_resolution=1.0, dst_grid_resolution=2.0,
                          paths=self.fixture_paths)
@@ -218,6 +233,7 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         """Test grids are retrieved from the supported input regrid target types."""
 
         mGrid = mock.create_autospec(Grid, spec_set=True, instance=True)
+        mGrid.parent = mock.Mock()
         type(mGrid).ndim = PropertyMock(return_value=2)
 
         def _create_mField_():
@@ -381,41 +397,3 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         gc = self.fixture_grid_chunker(nchunks_dst=None)
         self.assertIsNotNone(gc.nchunks_dst)
         self.assertEqual(gc.nchunks_dst, (10, 10))
-
-    def test_write_chunks(self):
-        # Test a destination iterator.
-        grid = mock.create_autospec(GridUnstruct)
-        grid._gc_initialize_ = mock.Mock()
-        grid.resolution_max = 10.0
-        grid.ndim = 1
-        grid.wrapped_state = WrappedState.UNWRAPPED
-        grid.crs = Spherical()
-        grid.get_intersects = mock.Mock(return_value=(grid, slice(0, 0)))
-        grid.is_empty = False
-
-        parent = mock.create_autospec(Field, spec_set=True)
-        parent.add_variable = mock.Mock()
-        grid.parent = parent
-
-        grid.shape_global = (5,)
-
-        def iter_dst(grid_chunker, yield_slice=False):
-            for _ in range(3):
-                yld = mock.create_autospec(GridUnstruct, instance=True)
-                yld.wrapped_state = WrappedState.UNWRAPPED
-                yld.is_empty = False
-                yld.extent_global = (0, 0, 0, 0)
-
-                parent = mock.create_autospec(Field, spec_set=True)
-                parent.add_variable = mock.Mock()
-                yld.parent = parent
-                yld.shape_global = (25,)
-                yld.extent_global = (1, 2, 3, 4)
-                yld.parent.attrs = {}
-
-                if yield_slice:
-                    yld = yld, None
-                yield yld
-
-        gs = GridChunker(grid, grid, (100,), iter_dst=iter_dst, dst_grid_resolution=5.0, check_contains=False)
-        gs.write_chunks()

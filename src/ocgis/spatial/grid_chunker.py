@@ -92,8 +92,10 @@ class GridChunker(AbstractOcgisObject):
 
     def __init__(self, source, destination, nchunks_dst=None, paths=None, check_contains=False, allow_masked=True,
                  src_grid_resolution=None, dst_grid_resolution=None, optimized_bbox_subset='auto', iter_dst=None,
-                 buffer_value=None, redistribute=False, genweights=False, esmf_kwargs=None, use_spatial_decomp='auto'):
+                 buffer_value=None, redistribute=False, genweights=False, esmf_kwargs=None, use_spatial_decomp='auto',
+                 eager=True):
         # tdk: DOC: use_spatial_decomp
+        # tdk: DOC: eager
         self._src_grid = None
         self._dst_grid = None
         self._buffer_value = None
@@ -104,6 +106,7 @@ class GridChunker(AbstractOcgisObject):
         self.genweights = genweights
         self.source = source
         self.destination = destination
+        self.eager = eager
 
         if esmf_kwargs is None:
             esmf_kwargs = {}
@@ -794,7 +797,7 @@ def does_contain(container, containee):
     return np.isclose(intersection.area, containee.area)
 
 
-def get_grid_object(obj):
+def get_grid_object(obj, load=True):
     if isinstance(obj, AbstractGrid):
         res = obj
     elif isinstance(obj, RequestDataset):
@@ -803,6 +806,9 @@ def get_grid_object(obj):
         res = obj.grid
     else:
         raise NotImplementedError(obj)
+
+    if load:
+        res.parent.load()
 
     return res
 
