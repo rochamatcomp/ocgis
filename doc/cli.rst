@@ -12,11 +12,11 @@ The OpenClimateGIS command line interface provides access to Python capabilities
 
 Current subcommands:
 
-=============== ========================== =====================================================================================================================================================================
+=============== ========================== =======================================================================================================================================================================================
 Subcommand      Long Name                  Description
-=============== ========================== =====================================================================================================================================================================
-``chunked_rwg`` :ref:`chunked_rwg_section` Chunked regrid weight generation using OCGIS spatial decompositions and ESMF. Allows weight generation for very high resolution grids in memory-limited environments.
-=============== ========================== =====================================================================================================================================================================
+=============== ========================== =======================================================================================================================================================================================
+``chunked_rwg`` :ref:`chunked_rwg_section` Chunked regrid weight generation using OCGIS spatial decompositions and ESMF weight generation. Allows weight generation for very high resolution grids in memory-limited environments.
+=============== ========================== =======================================================================================================================================================================================
 
 .. _chunked_rwg_section:
 
@@ -24,7 +24,7 @@ Subcommand      Long Name                  Description
 Chunked Regrid Weight Generation
 ++++++++++++++++++++++++++++++++
 
-Chunked regrid weight generation uses a spatial decomposition to calculate regridding weights by breaking source and destination grids into smaller pieces (chunks). This allows very high resolution grids to participate in regridding without depleting machine memory. The destination grid is chunked using index-based slicing. The source grid is then spatially subset by the spatial extent of the destination chunk increased a spatial buffer to ensure the destination chunk is fully mapped by the source chunk. Weights are calculated using ESMF for each chunked source-destination combination. A global weight file merge is performed by default on the weight chunks to creating a global weights file.
+Chunked regrid weight generation uses a spatial decomposition to calculate regridding weights by breaking source and destination grids into smaller pieces (chunks). This allows very high resolution grids to participate in regridding without depleting machine memory. The destination grid is chunked using a spatial decomposition (unstructured grids) or index-based slicing (structured, logically rectangular grids). The source grid is then spatially subset by the spatial extent of the destination chunk increased a spatial buffer to ensure the destination chunk is fully mapped by the source chunk. Weights are calculated using ESMF for each chunked source-destination combination. A global weight file merge is performed by default on the weight chunks to creating a global weights file.
 
 In addition to chunked weight generation, the interface also offers spatial subsetting of the source grid using the `global` spatial extent of the destination grid. This is useful in situations where the destination grid spatial extent is very small compared to the spatial extent of the source grid.
 
@@ -97,6 +97,7 @@ Limitations
 * Reducing memory overhead leverages IO heavily. Best performance is attained when ``netCDF4-python`` is built with parallel support to allow asynchronous IO with OpenClimateGIS. A warning will be emitted by OpenClimateGIS iF a non-parallel ``netCDF4-python`` installation is detected.
 * Supports `weight generation only` without weight application (sparse matrix multiplication).
 * Works for spherical latitude/longitude grids only.
+* When a spatial decomposition is used on the destination grid, there may be duplicate entries in the merged, global weight file. These may be ignored as it results in only minor performance hits for sparse matrix multiplications.
 
 --------
 Examples
