@@ -132,7 +132,7 @@ def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, 
                      genweights=genweights, esmf_kwargs=esmf_kwargs, use_spatial_decomp='auto')
 
     # Write subsets and generate weights if requested in the grid splitter.
-    # TODO: Need a weight only option. If chunks are written
+    # TODO: Need a weight only option. If chunks are written, then weights are written...
     if not spatial_subset and nchunks_dst is not None:
         gs.write_chunks()
     else:
