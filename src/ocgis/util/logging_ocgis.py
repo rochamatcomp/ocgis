@@ -67,13 +67,17 @@ class OcgisLogging(object):
 
         logging.captureWarnings(None)
 
-    def __call__(self, msg=None, logger=None, level=logging.INFO, alias=None, ugid=None, exc=None):
+    def __call__(self, msg=None, logger=None, level=logging.INFO, alias=None, ugid=None, exc=None, force=False):
         # attach a default exception to messages to handle warnings if an exception is not provided
         if level == logging.WARN:
             if exc is None:
                 exc = OcgWarning(msg)
-            if not env.SUPPRESS_WARNINGS:
-                warn(exc)
+            if not env.SUPPRESS_WARNINGS or force:
+                logging.captureWarnings(False)
+                try:
+                    warn(exc)
+                finally:
+                    logging.captureWarnings(env.SUPPRESS_WARNINGS)
 
         if self.callback is not None and self.callback_level <= level:
             if msg is not None:

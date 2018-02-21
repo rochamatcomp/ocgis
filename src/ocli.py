@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
+import logging
 import os
 import shutil
 import tempfile
-from logging import WARN
 
 import click
 from shapely.geometry import box
@@ -71,8 +71,7 @@ def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, 
     if not ocgis.env.USE_NETCDF4_MPI:
         msg = 'env.USE_NETCDF4_MPI is False. Considerable performance gains are possible if this is True. Is ' \
               'netCDF4-python built with parallel support?'
-        # tdk: LAST-ENH add force method to warning messages ensuring they are emitted
-        ocgis_lh(msg, level=WARN, logger='ocli.chunked_rwg')
+        ocgis_lh(msg, level=logging.WARN, logger='ocli.chunked_rwg', force=True)
 
     if nchunks_dst is not None:
         # Format the chunking decomposition from its string representation.
