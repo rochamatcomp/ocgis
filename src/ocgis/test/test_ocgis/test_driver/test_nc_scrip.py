@@ -174,3 +174,4 @@ def run_topo_tst(obj, dmap):
     for k in [DMK.X, DMK.Y]:
         actual = topo.get_dimension(k)
         obj.assertEqual(actual[0], 'grid_size')
+
