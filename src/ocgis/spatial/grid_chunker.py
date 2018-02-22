@@ -3,6 +3,8 @@ import os
 
 import netCDF4 as nc
 import numpy as np
+from shapely.geometry import box
+
 from ocgis.base import AbstractOcgisObject, grid_abstraction_scope
 from ocgis.collection.field import Field
 from ocgis.constants import GridChunkerConstants, RegriddingRole, Topology, DMK
@@ -16,7 +18,6 @@ from ocgis.variable.dimension import Dimension
 from ocgis.variable.geom import GeometryVariable
 from ocgis.vmachine.core import vm
 from ocgis.vmachine.mpi import redistribute_by_src_idx
-from shapely.geometry import box
 
 
 # tdk: LAST-DOC: update ESMF external demos to account for ocgis changes
@@ -759,7 +760,8 @@ def create_esmf_field(*args):
     import ESMF
 
     grid = create_esmf_grid(*args)
-    # tdk: LAST-ENH: need method to specify meshloc for fields
+
+    # TODO: Method to specify "meshloc" at API level
     if isinstance(grid, ESMF.Mesh):
         meshloc = ESMF.MeshLoc.ELEMENT
     else:
