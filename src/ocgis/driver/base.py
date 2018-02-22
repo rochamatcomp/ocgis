@@ -6,6 +6,7 @@ from copy import deepcopy
 from warnings import warn
 
 import six
+
 from ocgis import constants, GridUnstruct
 from ocgis import vm
 from ocgis.base import AbstractOcgisObject, raise_if_empty
@@ -33,11 +34,12 @@ class AbstractDriver(AbstractOcgisObject):
     :type rd: :class:`~ocgis.RequestDataset`
     """
 
-    _default_crs = None
-    _priority = False
     common_extension = None  # The standard file extension commonly associated with the canonical file format.
+    default_axes_positions = (0, 1)  # Standard axes index for Y and X respectively.
+    _default_crs = None
     _esmf_fileformat = None  # The associated ESMF file type. This may be None.
     _esmf_grid_class = constants.ESMFGridClass.GRID  # The ESMF grid class type.
+    _priority = False
 
     def __init__(self, rd):
         self.rd = rd
@@ -874,6 +876,7 @@ class AbstractTabularDriver(AbstractDriver):
 
 @six.add_metaclass(ABCMeta)
 class AbstractUnstructuredDriver(AbstractOcgisObject):
+    default_axes_positions = (0, 0)  # Standard axes index for Y and X respectively.
     _esmf_grid_class = constants.ESMFGridClass.MESH
 
     @staticmethod

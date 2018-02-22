@@ -24,14 +24,22 @@ class Test(TestBase):
 
     @attr('mpi')
     def test_iter_spatial_decomposition(self):
+        self.add_barrier = False
         if vm.size not in [1, 4]:
             raise SkipTest('vm.size not in [1, 4]')
 
         grid = create_gridxy_global(resolution=10., wrapped=False, crs=Spherical())
         splits = (2, 3)
         actual = []
-        for yld in iter_spatial_decomposition(grid, splits, optimized_bbox_subset=True):
-            actual.append(yld.extent_global)
+        for sub, slc in iter_spatial_decomposition(grid, splits, optimized_bbox_subset=True):
+            root = vm.get_live_ranks_from_object(sub)[0]
+            with vm.scoped_by_emptyable('test extent', sub):
+                if vm.is_null:
+                    extent_global = None
+                else:
+                    extent_global = sub.extent_global
+            extent_global = vm.bcast(extent_global, root=root)
+            actual.append(extent_global)
 
         desired = [(0.0, -90.0, 120.0, 0.0), (120.0, -90.0, 240.0, 0.0), (240.0, -90.0, 360.0, 0.0),
                    (0.0, 0.0, 120.0, 90.0), (120.0, 0.0, 240.0, 90.0), (240.0, 0.0, 360.0, 90.0)]

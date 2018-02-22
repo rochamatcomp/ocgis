@@ -4,14 +4,15 @@ from abc import abstractmethod
 
 import numpy as np
 import six
+from pyproj import Proj, transform
+from shapely.geometry import box
+
 from ocgis import Variable, SourcedVariable, vm
 from ocgis.base import raise_if_empty, is_field, AbstractInterfaceObject
 from ocgis.constants import KeywordArgument, VariableName, WrapAction, DMK
 from ocgis.exc import GridDeficientError
 from ocgis.variable import crs
 from ocgis.variable.base import AbstractContainer
-from pyproj import Proj, transform
-from shapely.geometry import box
 
 
 class AbstractSpatialObject(AbstractInterfaceObject):
@@ -286,7 +287,7 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         y = kwargs.pop(KeywordArgument.Y, None)
         z = kwargs.pop(KeywordArgument.Z, None)
         mask = kwargs.pop(KeywordArgument.MASK, None)
-        pos = kwargs.pop(KeywordArgument.POS, (0, 1))
+        pos = kwargs.pop(KeywordArgument.POS, None)
         is_isomorphic = kwargs.pop(DMK.IS_ISOMORPHIC, 'auto')
 
         parent = kwargs.get(KeywordArgument.PARENT, None)
@@ -319,10 +320,8 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
             for var in new_variables:
                 parent.add_variable(var, force=True)
 
-        # tdk: LAST-HACK: the set_xyz... method should maybe be on the driver
-        if parent.driver.key in ('netcdf-ugrid', 'netcdf-scrip'):
-            pos = (0, 0)
-
+        if pos is None:
+            pos = parent.driver.default_axes_positions
         self._set_xyz_on_dimension_map_(x, y, z, pos, parent=parent)
 
         super(AbstractXYZSpatialContainer, self).__init__(**kwargs)
