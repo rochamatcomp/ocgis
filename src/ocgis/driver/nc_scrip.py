@@ -59,7 +59,7 @@ class DriverNetcdfSCRIP(AbstractUnstructuredDriver, DriverNetcdf):
         return 'grid_size'
 
     @staticmethod
-    def get_spatial_mask(*args, **kwargs):
+    def get_or_create_spatial_mask(*args, **kwargs):
         """
         Get or create the SCRIP spatial mask. Arguments and keyword arguments in signature are for driver
         compatibility only.

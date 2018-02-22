@@ -3,11 +3,8 @@ import itertools
 from collections import OrderedDict
 
 import numpy as np
-import six
-from shapely.geometry import Polygon, Point, box
-from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
-
 import ocgis
+import six
 from ocgis import Variable, vm
 from ocgis.base import get_dimension_names, raise_if_empty, AbstractOcgisObject, get_variable_names, \
     is_unstructured_driver
@@ -22,6 +19,8 @@ from ocgis.variable.base import get_dslice, get_dimension_lengths
 from ocgis.variable.dimension import Dimension
 from ocgis.variable.geom import GeometryVariable, get_masking_slice, GeometryProcessor
 from ocgis.vmachine.mpi import MPI_SIZE
+from shapely.geometry import Polygon, Point, box
+from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
 
 CreateGeometryFromWkb, Geometry, wkbGeometryCollection, wkbPoint = ogr.CreateGeometryFromWkb, ogr.Geometry, \
                                                                    ogr.wkbGeometryCollection, ogr.wkbPoint
@@ -1095,14 +1094,6 @@ def arr_intersects_bounds(arr, lower, upper, keep_touches=True, section_slice=No
         ret[section_slice] = np.logical_and(arr_lower, arr_upper)
 
     return ret
-
-
-def create_grid_mask_variable(name, mask_value, dimensions):
-    mask_variable = Variable(name, mask=mask_value, dtype=np.dtype('i1'), dimensions=dimensions,
-                             attrs={'ocgis_role': 'spatial_mask',
-                                    'description': 'values matching fill value are spatially masked'})
-    mask_variable.allocate_value(fill=0)
-    return mask_variable
 
 
 def update_crs_with_geometry_collection(src_sr, to_sr, value_row, value_col):

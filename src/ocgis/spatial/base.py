@@ -4,15 +4,14 @@ from abc import abstractmethod
 
 import numpy as np
 import six
-from pyproj import Proj, transform
-from shapely.geometry import box
-
 from ocgis import Variable, SourcedVariable, vm
 from ocgis.base import raise_if_empty, is_field, AbstractInterfaceObject
 from ocgis.constants import KeywordArgument, VariableName, WrapAction, DMK
 from ocgis.exc import GridDeficientError
 from ocgis.variable import crs
 from ocgis.variable.base import AbstractContainer
+from pyproj import Proj, transform
+from shapely.geometry import box
 
 
 class AbstractSpatialObject(AbstractInterfaceObject):
@@ -243,7 +242,7 @@ class AbstractSpatialContainer(AbstractContainer, AbstractOperationsSpatialObjec
         """
         args = list(args)
         args.insert(0, self)
-        return self.driver.get_spatial_mask(*args, **kwargs)
+        return self.driver.get_or_create_spatial_mask(*args, **kwargs)
 
     def set_mask(self, value, cascade=False):
         """
@@ -330,8 +329,7 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
 
         if mask is not None:
             if not isinstance(mask, Variable):
-                from ocgis.spatial.grid import create_grid_mask_variable
-                mask = create_grid_mask_variable(VariableName.SPATIAL_MASK, mask, self.dimensions)
+                mask = create_spatial_mask_variable(VariableName.SPATIAL_MASK, mask, self.dimensions)
             self.parent.add_variable(mask, force=True)
             self.dimension_map.set_spatial_mask(mask)
 
@@ -632,6 +630,25 @@ class AbstractSpatialVariable(AbstractOperationsSpatialObject, SourcedVariable):
         if crs is not None:
             ret.parent.add_variable(crs)
         return ret
+
+
+def create_spatial_mask_variable(name, mask_value, dimensions):
+    """
+    Create an OCGIS spatial mask variable with standard attributes. By default, the value of the returned variable is
+    allocated with zeroes.
+
+    :param str name: Variable name
+    :param mask_value: Boolean array with dimension matching ``dimensions``
+    :type mask_value: :class:`numpy.ndarray`
+    :param dimensions: Dimension sequence for the new variable
+    :type dimensions: tuple(:class:`ocgis.Dimension`, ...)
+    :rtype: :class:`ocgis.Variable`
+    """
+    mask_variable = Variable(name, mask=mask_value, dtype=np.dtype('i1'), dimensions=dimensions,
+                             attrs={'ocgis_role': 'spatial_mask',
+                                    'description': 'values matching fill value are spatially masked'})
+    mask_variable.allocate_value(fill=0)
+    return mask_variable
 
 
 def create_split_polygons(geom, split_shape):

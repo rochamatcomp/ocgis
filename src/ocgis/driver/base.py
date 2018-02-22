@@ -6,7 +6,6 @@ from copy import deepcopy
 from warnings import warn
 
 import six
-
 from ocgis import constants, GridUnstruct
 from ocgis import vm
 from ocgis.base import AbstractOcgisObject, raise_if_empty
@@ -474,11 +473,23 @@ class AbstractDriver(AbstractOcgisObject):
         return json.dumps(meta)
 
     @staticmethod
-    def get_spatial_mask(*args, **kwargs):
-        # tdk: doc
+    def get_or_create_spatial_mask(*args, **kwargs):
+        """
+        Get or create the spatial mask variable and return its mask value as a boolean array.
 
-        # tdk: cln: this method should be moved and renamed. it is a spatial container operation and not specific to a grid
-        from ocgis.spatial.grid import create_grid_mask_variable
+        :param tuple args: See table
+
+        ===== ======================================================= ===================================
+        Index Type                                                    Description
+        ===== ======================================================= ===================================
+        0     :class:`ocgis.spatial.base.AbstractXYZSpatialContainer` Target XYZ spatial container
+        1:    <varying>                                               See :meth:`ocgis.Variable.get_mask`
+        ===== ======================================================= ===================================
+
+        :param kwargs: See keyword arguments to :meth:`ocgis.Variable.get_mask`
+        :rtype: :class:`numpy.ndarray`
+        """
+        from ocgis.spatial.base import create_spatial_mask_variable
 
         args = list(args)
         sobj = args[0]
@@ -489,7 +500,7 @@ class AbstractDriver(AbstractOcgisObject):
         ret = None
         if mask_variable is None:
             if create:
-                mask_variable = create_grid_mask_variable(VariableName.SPATIAL_MASK, None, sobj.dimensions)
+                mask_variable = create_spatial_mask_variable(VariableName.SPATIAL_MASK, None, sobj.dimensions)
                 sobj.set_mask(mask_variable)
         if mask_variable is not None:
             sobj.driver.validate_spatial_mask(mask_variable)
@@ -500,7 +511,8 @@ class AbstractDriver(AbstractOcgisObject):
     def set_spatial_mask(sobj, value, cascade=False):
         # tdk: doc
         # tdk: order
-        from ocgis.spatial.grid import create_grid_mask_variable, grid_set_mask_cascade
+        from ocgis.spatial.grid import grid_set_mask_cascade
+        from ocgis.spatial.base import create_spatial_mask_variable
         from ocgis.variable.base import Variable
 
         if isinstance(value, Variable):
@@ -510,7 +522,7 @@ class AbstractDriver(AbstractOcgisObject):
             mask_variable = sobj.mask_variable
             if mask_variable is None:
                 dimensions = sobj.dimensions
-                mask_variable = create_grid_mask_variable(VariableName.SPATIAL_MASK, value, dimensions)
+                mask_variable = create_spatial_mask_variable(VariableName.SPATIAL_MASK, value, dimensions)
                 sobj.parent.add_variable(mask_variable)
             else:
                 mask_variable.set_mask(value)

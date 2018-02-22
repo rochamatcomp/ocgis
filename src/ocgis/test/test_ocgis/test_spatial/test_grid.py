@@ -7,11 +7,6 @@ import fiona
 import mock
 import numpy as np
 from numpy.testing.utils import assert_equal
-from shapely import wkt
-from shapely.geometry import Point, box, MultiPolygon, shape
-from shapely.geometry import Polygon
-from shapely.geometry.base import BaseGeometry
-
 from ocgis import RequestDataset, vm, env
 from ocgis.base import get_variable_names
 from ocgis.collection.field import Field
@@ -20,9 +15,9 @@ from ocgis.driver.dimension_map import DimensionMap
 from ocgis.driver.nc import DriverNetcdfCF
 from ocgis.driver.nc_ugrid import DriverNetcdfUGRID
 from ocgis.exc import EmptySubsetError, BoundsAlreadyAvailableError
+from ocgis.spatial.base import create_spatial_mask_variable
 from ocgis.spatial.geomc import AbstractGeometryCoordinates, PointGC, PolygonGC
-from ocgis.spatial.grid import Grid, expand_grid, GridGeometryProcessor, GridUnstruct, create_grid_mask_variable, \
-    arr_intersects_bounds
+from ocgis.spatial.grid import Grid, expand_grid, GridGeometryProcessor, GridUnstruct, arr_intersects_bounds
 from ocgis.test.base import attr, AbstractTestInterface, create_gridxy_global, TestBase
 from ocgis.test.test_ocgis.test_spatial.test_geomc import FixturePointGC, FixturePolygonGC
 from ocgis.util.helpers import make_poly, iter_array
@@ -31,6 +26,10 @@ from ocgis.variable.crs import WGS84, CoordinateReferenceSystem, Spherical, Cart
 from ocgis.variable.dimension import Dimension
 from ocgis.variable.geom import GeometryVariable
 from ocgis.vmachine.mpi import MPI_RANK, MPI_COMM, variable_gather, MPI_SIZE, OcgDist, variable_scatter
+from shapely import wkt
+from shapely.geometry import Point, box, MultiPolygon, shape
+from shapely.geometry import Polygon
+from shapely.geometry.base import BaseGeometry
 
 
 class Test(AbstractTestInterface):
@@ -224,7 +223,7 @@ class TestGrid(AbstractTestInterface):
         mask_value = [[True, False], [False, True]]
         x = Variable(name='x', value=[1, 2], dimensions='x')
         y = Variable(name='y', value=[3, 4], dimensions='y')
-        mask_var = create_grid_mask_variable('mask', mask_value, [y.dimensions[0], x.dimensions[0]])
+        mask_var = create_spatial_mask_variable('mask', mask_value, [y.dimensions[0], x.dimensions[0]])
         for v in [mask_value, mask_var]:
             grid = Grid(x=x, y=y, mask=v)
             self.assertNumpyAll(mask_var.get_mask(), grid.mask_variable.get_mask())

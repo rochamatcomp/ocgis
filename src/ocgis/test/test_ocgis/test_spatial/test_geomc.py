@@ -6,9 +6,9 @@ from ocgis import Variable, Dimension, vm, Field, GeometryVariable, DimensionMap
 from ocgis.base import AbstractOcgisObject, raise_if_empty
 from ocgis.constants import WrappedState, DMK, GridAbstraction, Topology, DriverKey
 from ocgis.driver.nc_ugrid import DriverNetcdfUGRID
+from ocgis.spatial.base import create_spatial_mask_variable
 from ocgis.spatial.geomc import PointGC, get_default_geometry_variable_name, PolygonGC, reduce_reindex_coordinate_index, \
     iter_multipart_coordinates
-from ocgis.spatial.grid import create_grid_mask_variable
 from ocgis.spatial.grid_chunker import GridChunker
 from ocgis.test.base import TestBase, attr
 from ocgis.test.test_ocgis.test_driver.test_nc_ugrid import get_ugrid_data_structure
@@ -110,8 +110,8 @@ class FixturePointGC(AbstractOcgisObject):
 
     @property
     def fixture_mask(self):
-        return create_grid_mask_variable('mask', [False, False, False, False, True, False],
-                                         dimensions=self.fixture_element_dimension)
+        return create_spatial_mask_variable('mask', [False, False, False, False, True, False],
+                                            dimensions=self.fixture_element_dimension)
 
 
 class TestPointGC(TestBase, FixturePointGC):
