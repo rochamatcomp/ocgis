@@ -3,9 +3,8 @@ from unittest import SkipTest
 
 import mock
 import numpy as np
-from click.testing import CliRunner
-
 import ocgis
+from click.testing import CliRunner
 from ocgis import RequestDataset, Variable, Grid, vm
 from ocgis import env
 from ocgis.test.base import TestBase, attr, create_gridxy_global, create_exact_field
@@ -52,9 +51,6 @@ class TestChunkedRWG(TestBase):
     @attr('mpi', 'esmf')
     def test_system_chunked_versus_global(self):
         """Test weight files are equivalent using the chunked versus global weight generation approach."""
-        # tdk: LAST-TST: needs to work in parallel
-        # tdk: LAST-TST: test PATCH regridding
-
         if ocgis.vm.size not in [1, 4]:
             raise SkipTest('ocgis.vm.size not in [1, 4]')
 

@@ -698,7 +698,17 @@ def get_extent_global(container):
 
 
 def iter_spatial_decomposition(sobj, splits, **kwargs):
-    # tdk: DOC: collective
+    """
+    Yield spatial subsets of the target ``sobj`` defined by the spatial decomposition created from ``splits``.
+
+    This method is collective across the current :class:`ocgis.OcgVM`.
+
+    :param sobj: Target XYZ spatial container to subset
+    :type sobj: :class:`ocgis.spatial.base.AbstractXYZSpatialContainer`
+    :param tuple splits: The number of splits along each dimension of the ``sobj``'s global spatial extent
+    :param kwargs: See keyword arguments for :meth:`ocgis.spatial.base.AbstractXYZSpatialContainer.get_intersects`
+    :rtype: :class:`ocgis.spatial.base.AbstractXYZSpatialContainer`
+    """
     kwargs = kwargs.copy()
     kwargs[KeywordArgument.RETURN_SLICE] = True
 

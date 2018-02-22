@@ -507,31 +507,6 @@ class AbstractDriver(AbstractOcgisObject):
             ret = mask_variable.get_mask(*args, **kwargs)
         return ret
 
-    @staticmethod
-    def set_spatial_mask(sobj, value, cascade=False):
-        # tdk: doc
-        # tdk: order
-        from ocgis.spatial.grid import grid_set_mask_cascade
-        from ocgis.spatial.base import create_spatial_mask_variable
-        from ocgis.variable.base import Variable
-
-        if isinstance(value, Variable):
-            sobj.parent.add_variable(value, force=True)
-            mask_variable = value
-        else:
-            mask_variable = sobj.mask_variable
-            if mask_variable is None:
-                dimensions = sobj.dimensions
-                mask_variable = create_spatial_mask_variable(VariableName.SPATIAL_MASK, value, dimensions)
-                sobj.parent.add_variable(mask_variable)
-            else:
-                mask_variable.set_mask(value)
-        sobj.dimension_map.set_spatial_mask(mask_variable)
-
-        if cascade:
-            # tdk: this cascade should operation on all variables in the collection?
-            grid_set_mask_cascade(sobj)
-
     def get_variable_collection(self, **kwargs):
         """Here for backwards compatibility."""
         return self.create_raw_field(**kwargs)
@@ -688,6 +663,38 @@ class AbstractDriver(AbstractOcgisObject):
             ret = cls._open_(uri, mode=mode, **kwargs)
         return ret
 
+    @staticmethod
+    def set_spatial_mask(sobj, value, cascade=False):
+        """
+        Set the spatial mask on an XYZ spatial container.
+
+        :param sobj: Target XYZ spatial container
+        :type sobj: :class:`ocgis.spatial.base.AbstractXYZSpatialContainer`
+        :param value: The spatial mask value. This may be a variable or a boolean array. If it is a boolean array, a
+         spatial mask variable will be created and this array set as its mask.
+        :type value: :class:`ocgis.Variable` | :class:`numpy.ndarray`
+        :param bool cascade: If ``True``, cascade the mask across shared dimensions on the grid.
+        """
+        from ocgis.spatial.grid import grid_set_mask_cascade
+        from ocgis.spatial.base import create_spatial_mask_variable
+        from ocgis.variable.base import Variable
+
+        if isinstance(value, Variable):
+            sobj.parent.add_variable(value, force=True)
+            mask_variable = value
+        else:
+            mask_variable = sobj.mask_variable
+            if mask_variable is None:
+                dimensions = sobj.dimensions
+                mask_variable = create_spatial_mask_variable(VariableName.SPATIAL_MASK, value, dimensions)
+                sobj.parent.add_variable(mask_variable)
+            else:
+                mask_variable.set_mask(value)
+        sobj.dimension_map.set_spatial_mask(mask_variable)
+
+        if cascade:
+            grid_set_mask_cascade(sobj)
+
     def validate_field(self, field):
         pass
 
@@ -707,7 +714,13 @@ class AbstractDriver(AbstractOcgisObject):
 
     @staticmethod
     def validate_spatial_mask(mask_variable):
-        # tdk: DOC
+        """
+        Validate the spatial mask variable.
+
+        :param mask_variable: Target spatial mask variable
+        :type mask_variable: :class:`ocgis.Variable`
+        :raises: ValueError
+        """
         if mask_variable.attrs.get('ocgis_role') != 'spatial_mask':
             msg = 'Mask variable "{}" must have an "ocgis_role" attribute with a value of "spatial_mask".'.format(
                 mask_variable.name)

@@ -86,6 +86,12 @@ class GridChunker(AbstractOcgisObject):
     ``'unmapped_action'`` ``'IGNORE'``   ``'IGNORE'``, ``'ERROR'``
     ===================== ============== ===============================================================
 
+    :param bool use_spatial_decomp: If ``True``, use a spatial decomposition as opposed to an index-based decomposition
+     when creating destination chunks. A spatial decomposition ensures destination coordinates are spatially "clumped"
+     and is recommended for unstructured datasets. If ``'auto'``, choose the best approach from the grid type.
+    :param bool eager: If ``True``, load grid data from disk before chunking. This avoids always loading the data from
+     disk for sourced datasets following a subset. There will be an improvement in performance but an increase in the
+     memory used.
     :raises: ValueError
     """
 
@@ -93,8 +99,6 @@ class GridChunker(AbstractOcgisObject):
                  src_grid_resolution=None, dst_grid_resolution=None, optimized_bbox_subset='auto', iter_dst=None,
                  buffer_value=None, redistribute=False, genweights=False, esmf_kwargs=None, use_spatial_decomp='auto',
                  eager=True):
-        # tdk: DOC: use_spatial_decomp
-        # tdk: DOC: eager
         self._src_grid = None
         self._dst_grid = None
         self._buffer_value = None
