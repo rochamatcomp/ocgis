@@ -3,8 +3,6 @@ import sys
 
 import numpy as np
 from mock import mock, PropertyMock
-from shapely.geometry import box
-
 from ocgis import RequestDataset, Field, vm, env
 from ocgis.base import get_variable_names
 from ocgis.constants import MPIWriteMode, GridChunkerConstants, VariableName
@@ -18,6 +16,7 @@ from ocgis.variable.crs import Spherical
 from ocgis.variable.dimension import Dimension
 from ocgis.variable.temporal import TemporalVariable
 from ocgis.vmachine.mpi import MPI_COMM, MPI_RANK
+from shapely.geometry import box
 
 
 class Test(TestBase):
@@ -48,35 +47,6 @@ class TestGridChunker(AbstractTestInterface, FixtureDriverNetcdfSCRIP):
         tvar = TemporalVariable(name='time', value=list(range(31)), dimensions=tdim, attrs={'axis': 'T'})
         grid.parent.add_variable(data)
         grid.parent.add_variable(tvar)
-
-    def assertWeightFilesEquivalent(self, global_weights_filename, merged_weights_filename):
-        nwf = RequestDataset(merged_weights_filename).get()
-        gwf = RequestDataset(global_weights_filename).get()
-        nwf_row = nwf['row'].get_value()
-        gwf_row = gwf['row'].get_value()
-        self.assertAsSetEqual(nwf_row, gwf_row)
-        nwf_col = nwf['col'].get_value()
-        gwf_col = gwf['col'].get_value()
-        self.assertAsSetEqual(nwf_col, gwf_col)
-        nwf_S = nwf['S'].get_value()
-        gwf_S = gwf['S'].get_value()
-        self.assertEqual(nwf_S.sum(), gwf_S.sum())
-        unique_src = np.unique(nwf_row)
-        diffs = []
-        for us in unique_src.flat:
-            nwf_S_idx = np.where(nwf_row == us)[0]
-            nwf_col_sub = nwf_col[nwf_S_idx]
-            nwf_S_sub = nwf_S[nwf_S_idx].sum()
-
-            gwf_S_idx = np.where(gwf_row == us)[0]
-            gwf_col_sub = gwf_col[gwf_S_idx]
-            gwf_S_sub = gwf_S[gwf_S_idx].sum()
-
-            self.assertAsSetEqual(nwf_col_sub, gwf_col_sub)
-
-            diffs.append(nwf_S_sub - gwf_S_sub)
-        diffs = np.abs(diffs)
-        self.assertLess(diffs.max(), 1e-14)
 
     def fixture_grid_chunker(self, **kwargs):
         src_grid = self.get_gridxy_global(wrapped=False, with_bounds=True)

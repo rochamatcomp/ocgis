@@ -2,7 +2,6 @@ import os
 from unittest import SkipTest
 
 import mock
-import numpy as np
 import ocgis
 from click.testing import CliRunner
 from ocgis import RequestDataset, Variable, Grid, vm
@@ -220,36 +219,6 @@ class TestChunkedRWG(TestBase):
             mocks = [mRequestDataset, mGridChunker, m_mkdtemp, m_rmtree, m_makedirs, m_write_spatial_subset]
             for m in mocks:
                 m.reset_mock()
-
-    def assertWeightFilesEquivalent(self, global_weights_filename, merged_weights_filename):
-        # tdk: LAST-HACK: this is duplicated in TestGridChunker. find way to remove duplicate code.
-        nwf = RequestDataset(merged_weights_filename).get()
-        gwf = RequestDataset(global_weights_filename).get()
-        nwf_row = nwf['row'].get_value()
-        gwf_row = gwf['row'].get_value()
-        self.assertAsSetEqual(nwf_row, gwf_row)
-        nwf_col = nwf['col'].get_value()
-        gwf_col = gwf['col'].get_value()
-        self.assertAsSetEqual(nwf_col, gwf_col)
-        nwf_S = nwf['S'].get_value()
-        gwf_S = gwf['S'].get_value()
-        self.assertEqual(nwf_S.sum(), gwf_S.sum())
-        unique_src = np.unique(nwf_row)
-        diffs = []
-        for us in unique_src.flat:
-            nwf_S_idx = np.where(nwf_row == us)[0]
-            nwf_col_sub = nwf_col[nwf_S_idx]
-            nwf_S_sub = nwf_S[nwf_S_idx].sum()
-
-            gwf_S_idx = np.where(gwf_row == us)[0]
-            gwf_col_sub = gwf_col[gwf_S_idx]
-            gwf_S_sub = gwf_S[gwf_S_idx].sum()
-
-            self.assertAsSetEqual(nwf_col_sub, gwf_col_sub)
-
-            diffs.append(nwf_S_sub - gwf_S_sub)
-        diffs = np.abs(diffs)
-        self.assertLess(diffs.max(), 1e-14)
 
     @attr('esmf')
     def test_chunked_rwg_spatial_subset(self):

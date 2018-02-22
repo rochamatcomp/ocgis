@@ -1,5 +1,4 @@
 import abc
-import datetime
 import itertools
 import os
 import shutil
@@ -13,14 +12,11 @@ from contextlib import contextmanager
 from copy import deepcopy, copy
 from pprint import pprint
 
+import datetime
 import fiona
 import netCDF4 as nc
 import numpy as np
 import six
-from shapely import wkt
-from shapely.geometry import Point
-from shapely.geometry.base import BaseMultipartGeometry
-
 from ocgis import RequestDataset
 from ocgis import SourcedVariable
 from ocgis import Variable, Dimension
@@ -36,6 +32,9 @@ from ocgis.variable.crs import CoordinateReferenceSystem
 from ocgis.variable.geom import GeometryVariable
 from ocgis.variable.temporal import TemporalVariable
 from ocgis.vmachine.mpi import get_standard_comm_state, OcgDist, MPI_RANK, variable_scatter, variable_collection_scatter
+from shapely import wkt
+from shapely.geometry import Point
+from shapely.geometry.base import BaseMultipartGeometry
 
 """
 Definitions for various "attrs":
@@ -417,6 +416,37 @@ class TestBase(unittest.TestCase):
             warnings.simplefilter('always')
             meth()
             self.assertTrue(any(item.category == warning for item in warning_list))
+
+    def assertWeightFilesEquivalent(self, global_weights_filename, merged_weights_filename):
+        """Assert weight files are equivalent."""
+
+        nwf = RequestDataset(merged_weights_filename).get()
+        gwf = RequestDataset(global_weights_filename).get()
+        nwf_row = nwf['row'].get_value()
+        gwf_row = gwf['row'].get_value()
+        self.assertAsSetEqual(nwf_row, gwf_row)
+        nwf_col = nwf['col'].get_value()
+        gwf_col = gwf['col'].get_value()
+        self.assertAsSetEqual(nwf_col, gwf_col)
+        nwf_S = nwf['S'].get_value()
+        gwf_S = gwf['S'].get_value()
+        self.assertEqual(nwf_S.sum(), gwf_S.sum())
+        unique_src = np.unique(nwf_row)
+        diffs = []
+        for us in unique_src.flat:
+            nwf_S_idx = np.where(nwf_row == us)[0]
+            nwf_col_sub = nwf_col[nwf_S_idx]
+            nwf_S_sub = nwf_S[nwf_S_idx].sum()
+
+            gwf_S_idx = np.where(gwf_row == us)[0]
+            gwf_col_sub = gwf_col[gwf_S_idx]
+            gwf_S_sub = gwf_S[gwf_S_idx].sum()
+
+            self.assertAsSetEqual(nwf_col_sub, gwf_col_sub)
+
+            diffs.append(nwf_S_sub - gwf_S_sub)
+        diffs = np.abs(diffs)
+        self.assertLess(diffs.max(), 1e-14)
 
     @staticmethod
     def barrier_print(*args, **kwargs):
