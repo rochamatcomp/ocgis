@@ -2,7 +2,7 @@ import numpy as np
 
 from ocgis import DimensionMap, env, constants, vm
 from ocgis.base import raise_if_empty
-from ocgis.constants import DriverKey, DMK, Topology, MPIOps
+from ocgis.constants import DriverKey, DMK, Topology
 from ocgis.driver.base import AbstractUnstructuredDriver
 from ocgis.driver.nc import DriverNetcdf
 from ocgis.util.helpers import create_unique_global_array
@@ -126,13 +126,10 @@ class DriverNetcdfSCRIP(AbstractUnstructuredDriver, DriverNetcdf):
 
     @staticmethod
     def _gc_nchunks_dst_(grid_chunker):
-        pgc = grid_chunker.dst_grid.abstractions_available['point']
-        y = pgc.y.get_value()
-        uy = create_unique_global_array(y)
-        total = vm.reduce(uy.size, MPIOps.SUM)
-        total = vm.bcast(total)
-        if total < 100:
-            ret = total
+        g = grid_chunker.dst_grid
+        size = g.y.size
+        if size < 100:
+            ret = int(size / 2)
         else:
-            ret = 100
+            raise NotImplementedError
         return ret
