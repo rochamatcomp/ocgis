@@ -445,11 +445,6 @@ class AbstractXYZSpatialContainer(AbstractSpatialContainer):
         return self.driver.array_resolution(self.y.get_value(), 0)
 
     @property
-    def driver(self):
-        # tdk: LAST-HACK: this should be a generic property on all parented collections like this
-        return self.parent.driver
-
-    @property
     def shape_global(self):
         """
         Get the global shape across the current :class:`~ocgis.OcgVM`.

@@ -490,7 +490,6 @@ class GridChunker(AbstractOcgisObject):
             ocgis_lh(logger='grid_chunker', msg='finished "self.src_grid.get_intersects"', level=logging.DEBUG)
 
             # Reload the data using a new source index distribution.
-            # tdk: LAST-HACK: SCRIP does expose "reduction" since coordinate indices are not used...driver?
             if hasattr(src_grid_subset, 'reduce_global') and src_grid_subset.cindex is not None:
                 # Only redistribute if we have one live rank.
                 if self.redistribute and len(vm.get_live_ranks_from_object(src_grid_subset)) > 0:
@@ -518,7 +517,6 @@ class GridChunker(AbstractOcgisObject):
                             raise ValueError('Contains check failed.')
 
                     # Try to reduce the coordinates in the case of unstructured grid data.
-                    # tdk: LAST-HACK: SCRIP does expose "reduction" since coordinate indices are not used...driver?
                     if hasattr(src_grid_subset, 'reduce_global') and src_grid_subset.cindex is not None:
                         ocgis_lh(logger='grid_chunker', msg='starting reduce_global', level=logging.DEBUG)
                         src_grid_subset = src_grid_subset.reduce_global()

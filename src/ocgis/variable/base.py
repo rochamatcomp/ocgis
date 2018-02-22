@@ -75,6 +75,11 @@ class AbstractContainer(AbstractNamedObject):
         return self._get_dimensions_()
 
     @property
+    def driver(self):
+        """Get the parent's driver class or object."""
+        return self.parent.driver
+
+    @property
     def group(self):
         """
         :return: The group index in the parent/child hierarchy. Returns ``None`` if this collection is the head.
