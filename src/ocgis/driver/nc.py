@@ -8,7 +8,6 @@ import netCDF4 as nc
 import numpy as np
 import six
 from netCDF4._netCDF4 import VLType, MFDataset, MFTime
-
 from ocgis import constants, vm
 from ocgis import env
 from ocgis.base import orphaned, raise_if_empty
@@ -768,10 +767,9 @@ def create_dimension_map_entry(src, variables, strict=False, attr_name='axis'):
 
         ret = {'variable': var_name, DimensionMapKey.DIMENSION: dims}
     elif len(axis_vars) > 1:
-        # tdk: LAST-ENH: this should use the warning level flag as well
         msg = 'Multiple axis (axis="{}") possibilities found using variable(s) "{}". Use a dimension map to specify ' \
               'the appropriate coordinate dimensions.'
-        ocgis_lh(msg.format(axis, axis_vars), level=logging.WARN, logger='ocgis.driver.nc')
+        ocgis_lh(msg.format(axis, axis_vars), level=logging.WARN, logger='ocgis.driver.nc', force=True)
         ret = None
     else:
         ret = None
