@@ -19,7 +19,6 @@ dstgrid = create_gridxy_global(resolution=1.33, crs=ocgis.crs.Spherical())
 dstgrid.parent.write(DST_CFGRID)
 # ----------------------------------------------------------------------------------------------------------------------
 
-# tdk: LAST-CLN: revert to ocli instead of ocli.py
 # Construct the chunked regrid weight generation command and execute in a subprocess.
 cmd = ['mpirun', '-n', str(4), sys.executable, 'ocli', 'chunked_rwg', '-s', SRC_CFGRID, '-d', DST_CFGRID,
        '-w', WEIGHT, '-n', '5,5']

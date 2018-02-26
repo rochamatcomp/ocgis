@@ -1,10 +1,10 @@
 import os
+import sys
 from unittest import SkipTest
 
 import mock
-from click.testing import CliRunner
-
 import ocgis
+from click.testing import CliRunner
 from ocgis import RequestDataset, Variable, Grid, vm
 from ocgis import env
 from ocgis.test.base import TestBase, attr, create_gridxy_global, create_exact_field
@@ -138,6 +138,9 @@ class TestChunkedRWG(TestBase):
     @attr('mpi', 'slow', 'no-3.5')
     def test_system_mock_combinations(self, mRequestDataset, mGridChunker, m_mkdtemp, m_rmtree, m_makedirs,
                                       m_write_spatial_subset):
+        if sys.version_info.major == 3 and sys.version_info.minor == 5:
+            raise SkipTest('undefined behavior with Python 3.5')
+
         if ocgis.vm.size not in [1, 2]:
             raise SkipTest('ocgis.vm.size not in [1, 2]')
 

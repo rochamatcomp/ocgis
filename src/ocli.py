@@ -6,8 +6,6 @@ import shutil
 import tempfile
 
 import click
-from shapely.geometry import box
-
 import ocgis
 from ocgis import RequestDataset, GeometryVariable
 from ocgis.base import grid_abstraction_scope
@@ -15,6 +13,7 @@ from ocgis.constants import DriverKey, Topology, GridChunkerConstants
 from ocgis.spatial.grid_chunker import GridChunker
 from ocgis.spatial.spatial_subset import SpatialSubsetOperation
 from ocgis.util.logging_ocgis import ocgis_lh
+from shapely.geometry import box
 
 
 @click.group()
@@ -152,13 +151,6 @@ def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, 
             if not ocgis.vm.is_null:
                 gs.create_merged_weight_file(weight)
         ocgis.vm.barrier()
-
-    # elif not spatial_subset:
-    #     # Write the subsets. Only do this if this is not a merge operation.
-    #     gs.write_chunks()
-    # else:
-    #     assert spatial_subset
-    #     assert not merge
 
     # Remove the working directory unless the persist flag is provided.
     if not persist:
