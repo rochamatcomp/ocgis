@@ -10,7 +10,6 @@ DATADIR = tempfile.mkdtemp(prefix='ocgis_chunked_rwg_')
 SRC_CFGRID = os.path.join(DATADIR, 'src.nc')
 DST_CFGRID = os.path.join(DATADIR, 'dst.nc')
 WEIGHT = os.path.join(DATADIR, 'esmf_weights.nc')
-OCLI_EXE = os.path.expanduser('~/l/ocgis/src/ocli.py')
 
 # Write the source and destination grids. The destination grid has a slightly larger resolution. -----------------------
 srcgrid = create_gridxy_global(crs=ocgis.crs.Spherical())
@@ -22,7 +21,7 @@ dstgrid.parent.write(DST_CFGRID)
 
 # tdk: LAST-CLN: revert to ocli instead of ocli.py
 # Construct the chunked regrid weight generation command and execute in a subprocess.
-cmd = ['mpirun', '-n', str(4), sys.executable, OCLI_EXE, 'chunked_rwg', '-s', SRC_CFGRID, '-d', DST_CFGRID,
+cmd = ['mpirun', '-n', str(4), sys.executable, 'ocli', 'chunked_rwg', '-s', SRC_CFGRID, '-d', DST_CFGRID,
        '-w', WEIGHT, '-n', '5,5']
 print(' '.join(cmd))
 subprocess.check_call(cmd)

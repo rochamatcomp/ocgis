@@ -33,7 +33,7 @@ def ocli():
                    'are needed to describe the x and y decomposition (i.e. 10,20). Required if --genweights and not '
                    '--spatial_subset.')
 @click.option('--merge/--no_merge', default=True,
-              help='(default=True) If --merge, merge weight file chunks into a global weight file.')
+              help='(default=merge) If --merge, merge weight file chunks into a global weight file.')
 @click.option('-w', '--weight', required=False, type=click.Path(exists=False, dir_okay=False),
               help='Path to the output global weight file. Required if --merge.')
 @click.option('--esmf_src_type', type=str, nargs=1, default='GRIDSPEC',
@@ -46,8 +46,8 @@ def ocli():
               help='(default=CONSERVE) The ESMF regrid method. Only applicable with --genweights. Supports CONSERVE, '
                    'BILINEAR. PATCH, and NEAREST_STOD.')
 @click.option('--spatial_subset/--no_spatial_subset', default=False,
-              help='(default=False) Optionally subset the destination grid by the bounding box spatial extent of the '
-                   'source grid. This will not work in parallel if --genweights.')
+              help='(default=no_spatial_subset) Optionally subset the destination grid by the bounding box spatial '
+                   'extent of the source grid. This will not work in parallel if --genweights.')
 @click.option('--src_resolution', type=float, nargs=1,
               help='Optionally overload the spatial resolution of the source grid. If provided, assumes an isomorphic '
                    'structure. Spatial resolution is the mean distance between grid cell center coordinates.')
@@ -64,12 +64,17 @@ def ocli():
               help="Optional working directory for intermediate chunk files. Creates a directory in the system's "
                    "temporary scratch space if not provided.")
 @click.option('--persist/--no_persist', default=False,
-              help='(default=False) If --persist, do not remove the working directory --wd following execution.')
+              help='(default=no_persist) If --persist, do not remove the working directory --wd following execution.')
+@click.option('--eager/--not_eager', default=True,
+              help='(default=eager) If --eager, load all data from the grids into memory before subsetting. This will '
+                   'increase performance as loading data for each chunk is avoided. Set this to --not_eager for a more '
+                   'memory efficient execution at the expense of additional IO operations.')
 def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, esmf_dst_type, genweights,
-                esmf_regrid_method, spatial_subset, src_resolution, dst_resolution, buffer_distance, wd, persist):
+                esmf_regrid_method, spatial_subset, src_resolution, dst_resolution, buffer_distance, wd, persist,
+                eager):
     if not ocgis.env.USE_NETCDF4_MPI:
-        msg = 'env.USE_NETCDF4_MPI is False. Considerable performance gains are possible if this is True. Is ' \
-              'netCDF4-python built with parallel support?'
+        msg = ('env.USE_NETCDF4_MPI is False. Considerable performance gains are possible if this is True. Is '
+               'netCDF4-python built with parallel support?')
         ocgis_lh(msg, level=logging.WARN, logger='ocli.chunked_rwg', force=True)
 
     if nchunks_dst is not None:
@@ -127,7 +132,7 @@ def chunked_rwg(source, destination, weight, nchunks_dst, merge, esmf_src_type, 
     # Create the chunked regridding object. This is used for both chunked regridding and a regrid with a spatial subset.
     gs = GridChunker(rd_src, rd_dst, nchunks_dst=nchunks_dst, src_grid_resolution=src_resolution, paths=paths,
                      dst_grid_resolution=dst_resolution, buffer_value=buffer_distance, redistribute=True,
-                     genweights=genweights, esmf_kwargs=esmf_kwargs, use_spatial_decomp='auto')
+                     genweights=genweights, esmf_kwargs=esmf_kwargs, use_spatial_decomp='auto', eager=eager)
 
     # Write subsets and generate weights if requested in the grid splitter.
     # TODO: Need a weight only option. If chunks are written, then weights are written...

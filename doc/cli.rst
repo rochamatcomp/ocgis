@@ -32,69 +32,13 @@ In addition to chunked weight generation, the interface also offers spatial subs
 Usage
 -----
 
-.. tdk: LAST-CLN: update help output; don't wrap final text to save space
-
-.. code-block:: sh
-
-   $ ocli chunked_rwg --help
-
-   Usage: ocli.py chunked_rwg [OPTIONS]
-
-     Run regridding using a spatial decomposition.
-
-   Options:
-     -s, --source PATH               Path to the source grid NetCDF file.
-                                     [required]
-     -d, --destination PATH          Path to the destination grid NetCDF file.
-                                     [required]
-     -n, --nchunks_dst TEXT          Single integer or sequence defining the
-                                     chunking decomposition for the destination
-                                     grid. For unstructured grids, provide a
-                                     single value (i.e. 100). For logically
-                                     rectangular grids, two values are needed to
-                                     describe the x and y decomposition (i.e.
-                                     10,20).
-     --merge / --no_merge            (default=True) If --merge, merge weight file
-                                     chunks into a global weight file.
-     -w, --weight PATH               Path to the output global weight file.
-                                     Required if --merge.
-     --esmf_src_type TEXT            (default=GRIDSPEC) ESMF source grid type.
-                                     Supports GRIDSPEC, UGRID, and SCRIP.
-     --esmf_dst_type TEXT            (default=GRIDSPEC) ESMF destination grid
-                                     type. Supports GRIDSPEC, UGRID, and SCRIP.
-     --genweights / --no_genweights  (default=True) Generate weights using ESMF
-                                     for each source and destination subset.
-     --esmf_regrid_method TEXT       (default=CONSERVE) The ESMF regrid method.
-                                     Only applicable with --genweights. Supports
-                                     CONSERVE and BILINEAR.
-     --spatial_subset / --no_spatial_subset
-                                     (default=False) Optionally subset the
-                                     destination grid by the bounding box spatial
-                                     extent of the source grid. This will not
-                                     work in parallel if --genweights.
-     --src_resolution FLOAT          Optionally overload the spatial resolution
-                                     of the source grid. If provided, assumes an
-                                     isomorphic structure.
-     --dst_resolution FLOAT          Optionally overload the spatial resolution
-                                     of the destination grid. If provided,
-                                     assumes an isomorphic structure.
-     --buffer_distance FLOAT         Optional spatial buffer distance (in units
-                                     of the destination grid) to use when
-                                     subsetting the source grid by the spatial
-                                     extent of a destination grid or chunk. This
-                                     is computed internally if not provided.
-     --wd PATH                       Optional working directory for output
-                                     intermediate files.
-     --persist / --no_persist        (default=False) If --persist, do not remove
-                                     the working directory --wd following
-                                     execution.
-     --help                          Show this message and exit.
+.. literalinclude:: sphinx_examples/chunked_rwg_help.sh
 
 -----------
 Limitations
 -----------
 
-* Reducing memory overhead leverages IO heavily. Best performance is attained when ``netCDF4-python`` is built with parallel support to allow asynchronous IO with OpenClimateGIS. A warning will be emitted by OpenClimateGIS iF a non-parallel ``netCDF4-python`` installation is detected.
+* Reducing memory overhead leverages IO heavily. Best performance is attained when ``netCDF4-python`` is built with parallel support to allow asynchronous IO with OpenClimateGIS. A warning will be emitted by OpenClimateGIS if a serial only ``netCDF4-python`` installation is detected.
 * Supports `weight generation only` without weight application (sparse matrix multiplication).
 * Works for spherical latitude/longitude grids only.
 * When a spatial decomposition is used on the destination grid, there may be duplicate entries in the merged, global weight file. These may be ignored as it results in only minor performance hits for sparse matrix multiplications.

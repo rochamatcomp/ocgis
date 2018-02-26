@@ -2,8 +2,9 @@ import os
 from unittest import SkipTest
 
 import mock
-import ocgis
 from click.testing import CliRunner
+
+import ocgis
 from ocgis import RequestDataset, Variable, Grid, vm
 from ocgis import env
 from ocgis.test.base import TestBase, attr, create_gridxy_global, create_exact_field
@@ -39,6 +40,7 @@ class TestChunkedRWG(TestBase):
         poss.persist = ['__exclude__', '__include__']
         poss.no_merge = ['__exclude__', '__include__']
         poss.spatial_subset = ['__exclude__', '__include__']
+        poss.not_eager = ['__exclude__', '__include__']
 
         return poss
 
@@ -184,6 +186,12 @@ class TestChunkedRWG(TestBase):
                 self.assertEqual(call_args[1]['nchunks_dst'], (1, 1))
             elif k['nchunks_dst'] == '1':
                 self.assertEqual(call_args[1]['nchunks_dst'], (1,))
+
+            actual = call_args[1]['eager']
+            if k['not_eager'] == '__include__':
+                self.assertFalse(actual)
+            else:
+                self.assertTrue(actual)
 
             self.assertEqual(mRequestDataset.call_count, 2)
 
