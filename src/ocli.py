@@ -6,6 +6,8 @@ import shutil
 import tempfile
 
 import click
+from shapely.geometry import box
+
 import ocgis
 from ocgis import RequestDataset, GeometryVariable
 from ocgis.base import grid_abstraction_scope
@@ -13,7 +15,6 @@ from ocgis.constants import DriverKey, Topology, GridChunkerConstants
 from ocgis.spatial.grid_chunker import GridChunker
 from ocgis.spatial.spatial_subset import SpatialSubsetOperation
 from ocgis.util.logging_ocgis import ocgis_lh
-from shapely.geometry import box
 
 
 @click.group()
@@ -21,7 +22,7 @@ def ocli():
     pass
 
 
-@ocli.command(help='Run regridding using a spatial decomposition.')
+@ocli.command(help='Generate regridding weights using a spatial decomposition.')
 @click.option('-s', '--source', required=True, type=click.Path(exists=True, dir_okay=False),
               help='Path to the source grid NetCDF file.')
 @click.option('-d', '--destination', required=True, type=click.Path(exists=True, dir_okay=False),
