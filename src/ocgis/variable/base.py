@@ -613,7 +613,8 @@ class Variable(AbstractContainer, Attributes):
         """Return ``True`` if the variable contains string data."""
         ret = False
         dtype = self.dtype
-        if dtype == object or str(dtype).startswith('|S') or dtype in six.string_types or np.issubdtype(dtype, np.string_):
+        if dtype == object or str(dtype).startswith('|S') or dtype in six.string_types or \
+                np.issubdtype(dtype, np.string_) or np.issubdtype(dtype, np.unicode):
             if len(self.dimensions) > 0:
                 archetype = self.get_value().flatten()[0]
                 if isinstance(archetype, six.string_types):

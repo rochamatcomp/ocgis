@@ -135,7 +135,7 @@ class TestChunkedRWG(TestBase):
     @mock.patch('tempfile.mkdtemp')
     @mock.patch('ocli.GridChunker')
     @mock.patch('ocli.RequestDataset')
-    @attr('mpi', 'slow')
+    @attr('mpi', 'slow', 'no-3.5')
     def test_system_mock_combinations(self, mRequestDataset, mGridChunker, m_mkdtemp, m_rmtree, m_makedirs,
                                       m_write_spatial_subset):
         if ocgis.vm.size not in [1, 2]:
